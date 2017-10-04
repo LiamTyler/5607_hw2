@@ -56,9 +56,9 @@ bool Parser::Parse() {
             infile_ >> up;
             float ha;
             infile_ >> ha;
-            camera_->setCameraPos(pos);
-            camera_->setCameraDir(dir);
-            camera_->setCameraUp(up);
+            camera_->setPos(pos);
+            camera_->setDir(dir);
+            camera_->setUp(up);
             camera_->setHalfAngle(ha);
         } else if (command == "film_resolution") {
             int w, h;

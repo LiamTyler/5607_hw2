@@ -70,6 +70,30 @@ int main(int argc, char* argv[]) {
     int height = camera->getHeight();
     Image img(width, height);
 
+    vec3 pos = camera->getPos();
+    vec3 dir = camera->getDir();
+    vec3 up = camera->getUp();
+    float half_angle = camera->getHalfAngle() * M_PI / 180.0;
+    float d = height / (2.0 * tan(half_angle));
+    vec3 dx = glm::normalize(glm::cross(up, dir));
+    vec3 dy = glm::normalize(-up);
+    vec3 ul = pos + d * dir + up * (height / 2.0) - (width / 2.0) * dx;
+    // cout << pos << endl;
+    // cout << dir << endl;
+    // cout << up << endl;
+    // cout << dx << endl;
+    // cout << dy << endl;
+    // cout << ul << endl;
+    // cout << half_angle << endl;
+    // cout << d << endl;
+
+    for (int r = 0; r < height; r++) {
+        vec3 py = ul + r * dy;
+        for (int c = 0; c < width; c++) {
+            vec3 p = py + c*dx;
+            vec ray = glm::normalize(p - pos);
+        }
+    }
 
     // write final image out
     img.Write(camera->getOutputImage());
