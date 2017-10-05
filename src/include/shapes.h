@@ -3,6 +3,8 @@
 
 #include "include/material.h"
 #include "glm/glm.hpp"
+#include <cmath>
+#include <algorithm>
 
 using glm::vec3;
 
@@ -13,6 +15,21 @@ class Sphere {
             position_ = pos;
             radius_ = r;
             material_ = m;
+        }
+
+        bool Hit(vec3 p, vec3 ray, float& t) {
+            float t0 = 1, t1 = 1;
+            vec3 g = p - position_;
+            float b = 2*glm::dot(ray, g);
+            float c = glm::dot(g,g) - radius_*radius_;
+            float disc = b*b - 4*c;
+            if (disc < 0) {
+                return false;
+            }
+            t0 = (-b + std::sqrt(disc)) / (2.0);
+            t1 = (-b - std::sqrt(disc)) / (2.0);
+            t = std::min(t0, t1);
+            return true;
         }
 
         void setPosition(vec3 p) { position_ = p; }

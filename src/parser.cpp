@@ -47,7 +47,6 @@ bool Parser::Parse() {
     while(infile_ >> command) {
         if (command[0] == '#'){
             getline(infile_, line);
-            cout << "Skipping comment: " << command  << line <<  endl;
             continue;
         } else if (command == "camera") {
             vec3 pos, dir, up;

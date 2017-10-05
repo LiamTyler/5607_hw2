@@ -71,33 +71,33 @@ int main(int argc, char* argv[]) {
     Image img(width, height);
 
     vec3 pos = camera->getPos();
-    vec3 dir = camera->getDir();
-    vec3 up = camera->getUp();
+    vec3 dir = glm::normalize(camera->getDir());
+    vec3 up = glm::normalize(camera->getUp());
     float half_angle = camera->getHalfAngle() * M_PI / 180.0;
     float d = height / (2.0 * tan(half_angle));
     vec3 dx = glm::normalize(glm::cross(up, dir));
-    vec3 dy = glm::normalize(-up);
+    vec3 dy = -up;
     vec3 ul = pos + d * dir + up * (height / 2.0) - (width / 2.0) * dx;
-    // cout << pos << endl;
-    // cout << dir << endl;
-    // cout << up << endl;
-    // cout << dx << endl;
-    // cout << dy << endl;
-    // cout << ul << endl;
-    // cout << half_angle << endl;
-    // cout << d << endl;
-
+    vector<Sphere*> spheres = p.getSpheres();
     for (int r = 0; r < height; r++) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {
+            img.SetPixel(r, c, Pixel(0,.6,0,1));
             vec3 p = py + c*dx;
-            vec ray = glm::normalize(p - pos);
+            vec3 ray = glm::normalize(p - pos);
+            // vector<float> intersections
+            for (int i = 0; i < spheres.size(); i++) {
+                float t;
+                if (spheres[i]->Hit(pos, ray, t)) { 
+                    Pixel color = spheres[i]->GetColor(pos, ray, t
+                    img.SetPixel(r, c, Pixel(0,0,0,1));
+                }
+            }
         }
     }
 
     // write final image out
     img.Write(camera->getOutputImage());
-
 
     return 0;
 }
