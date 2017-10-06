@@ -3,5 +3,9 @@ camera 0 0 0 0 0 1 0 1 0 45
 output_image spheres1.bmp
 film_resolution 200 200
 
+background 0 .6 0
+
+material 0 0 0   0 0 1  0 0 0   0   0 0 0   0
 sphere 0 0 100 25
-sphere 40 50 100 25
+
+point_light  1 1 1  30 0 60 

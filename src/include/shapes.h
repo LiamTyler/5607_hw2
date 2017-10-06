@@ -32,6 +32,10 @@ class Sphere {
             return true;
         }
 
+	vec3 GetColor(vec3 pos, vec3 ray, float t) {
+            return material_->getDiffuse();
+        }
+
         void setPosition(vec3 p) { position_ = p; }
         void setRadius(float r) { radius_ = r; }
         void setMaterial(Material *m) { material_ = m; }

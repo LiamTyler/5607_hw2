@@ -40,6 +40,7 @@ class Parser {
         vector<SpotLight *> getSpotLights() { return spot_lights_; }
         AmbientLight* getAmbientLight() { return ambient_light_; }
         vector<Sphere*> getSpheres() { return spheres_; }
+        vector<Material*> getMaterials() { return materials_; }
 
     private:
         string filename_;
