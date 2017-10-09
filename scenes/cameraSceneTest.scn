@@ -1,11 +1,13 @@
 # camera -6 2 -4 .77 0 .64 0 1 0 35
 camera 0 0 0 0 0 1 0 1 0 45
 output_image spheres1.bmp
-film_resolution 200 200
+film_resolution 600 600
 
 background 0 .6 0
 
-material 0 0 0   0 0 1  0 0 0   0   0 0 0   0
-sphere 0 0 100 25
+material 1 1 1  0 0 1  1 1 1  10  0 0 0   0
+sphere 0 0 300 150 
 
-point_light  1 1 1  30 0 60 
+point_light  1 1 1  -150 20 50
+
+ambient_light .1 .1 .1

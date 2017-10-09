@@ -1,12 +1,17 @@
 #include "include/rayTracer.h"
+#include "include/ray.h"
 
+using std::cout;
+using std::endl;
 using std::string;
-using glm::vec3;
 using std::vector;
+using glm::vec3;
 using glm::vec4;
 using glm::normalize;
 using glm::dot;
 using glm::cross;
+using glm::reflect;
+using glm::length;
 
 RayTracer::RayTracer() {
     parser_ = nullptr;
@@ -53,18 +58,71 @@ void RayTracer::Parse(string filename) {
     max_depth_ = parser_->getMaxDepth();
 }
 
-vec4 RayTracer::GetColor(Sphere* hit_s, vec3 pos, vec3 ray, float t) {
-    PointLight *light = point_lights_[0];
-    vec3 l = light->getPosition();
-    float r = glm::length(l);
-    vec3 p = pos + t * ray;
-    vec3 L = normalize(l - p);
-    Material * m = hit_s->getMaterial();
-    vec3 color = m->getDiffuse();
-    vec3 N = normalize(p - hit_s->getPosition());
-    return vec4(std::max(0.f, dot(N, L)) * color, 1);
+vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
+    // Get material Colors and properties
+    Material * m = hit_obj->getMaterial();
+    vec3 Ka = m->getAmbient();
+    vec3 Kd = m->getDiffuse();
+    vec3 Ks = m->getSpecular();
+    float s_power = m->getPower();
 
-    // return vec4(hit_s->GetColor(pos, ray, t), 1);
+    // calculate vectors: view, normal, and reflected
+    vec3 v = normalize(ray.dir);
+    vec3 p = ray.Evaluate();
+    vec3 n = hit_obj->getNormal(p);
+    vec3 r = reflect(v,n);
+
+    // color (starts as black)
+    vec3 color = vec3(0,0,0);
+    // ambient
+    color += Ka * ambient_light_->getColor();
+
+    // loop through every point light
+    for (int i = 0; i < point_lights_.size(); i++) {
+        // update light vector
+        PointLight *light = point_lights_[i];
+        vec3 l = light->getPosition() - p;
+        float d = glm::length(l);
+        l = normalize(l);
+
+        // cast shadow ray
+        Ray shadow(p + 0.01*l, l);
+        Shape *shadow_obj = Intersect(shadow);
+        if (shadow_obj && length(shadow.Evaluate() - p) < d)
+            continue;
+
+        // diffuse
+        color += Kd*std::max(0.f, dot(n, l));
+        // specular
+        color += Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
+    }
+    color.x = std::min(1.0f, std::max(0.f, color.x));
+    color.y = std::min(1.0f, std::max(0.f, color.y));
+    color.z = std::min(1.0f, std::max(0.f, color.z));
+
+    return vec4(color, 1);
+}
+
+Shape* RayTracer::Intersect(Ray& ray) {
+    Ray closest;
+    Shape* hit_obj = nullptr;
+    for (int i = 0; i < spheres_.size(); i++) {
+        if (spheres_[i]->Intersect(ray)) { 
+            if (hit_obj) {
+                if (ray.tmin < closest.tmin) {
+                    closest = ray;
+                    hit_obj = spheres_[i];
+                }
+            } else {
+                closest = ray;
+                hit_obj = spheres_[i];
+            }
+        }
+    }
+    if (hit_obj) {
+        ray = closest;
+    }
+    return hit_obj;
 }
 
 void RayTracer::Trace() {
@@ -81,32 +139,21 @@ void RayTracer::Trace() {
     vec3 dy = -up;
     vec3 ul = pos + d * dir + up * (height / 2.0) - (width / 2.0) * dx;
 
-    float earliest_hit;
-    Sphere* hit_sphere;
-
+    Shape* hit_obj;
     for (int r = 0; r < height; r++) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {
-            hit_sphere = nullptr;
+            // Compute ray
             vec3 p = py + c*dx;
-            vec3 ray = normalize(p - pos);
-            // vector<float> intersections
-            for (int i = 0; i < spheres_.size(); i++) {
-                float t;
-                if (spheres_[i]->Hit(pos, ray, t)) { 
-                    if (hit_sphere) {
-                        if (t < earliest_hit) {
-                            earliest_hit = t;
-                            hit_sphere = spheres_[i];
-                        }
-                    } else {
-                        earliest_hit = t;
-                        hit_sphere = spheres_[i];
-                    }
-                }
-            }
-            if (hit_sphere) {
-                image_->SetPixel(r, c, GetColor(hit_sphere, pos, ray, earliest_hit));
+            vec3 dir = normalize(p - pos);
+            Ray ray(pos, dir);
+
+            // See if ray hits anything
+            hit_obj = Intersect(ray);
+
+            // Compute color
+            if (hit_obj) {
+                image_->SetPixel(r, c, GetColor(hit_obj, ray));
             } else {
                 image_->SetPixel(r, c, background_);
             }

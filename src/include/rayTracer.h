@@ -21,7 +21,8 @@ class RayTracer {
         ~RayTracer();
         void Parse(string filename);
         void Trace();
-        vec4 GetColor(Sphere* hit_s, vec3 pos, vec3 ray, float t);
+        vec4 GetColor(Shape* hit_obj, Ray ray);
+        Shape* Intersect(Ray &ray);
 
     private:
         Image* image_;
