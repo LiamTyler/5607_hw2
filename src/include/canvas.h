@@ -11,6 +11,8 @@ using namespace nanogui;
 class MyGLCanvas : public GLCanvas {
     public:
         MyGLCanvas(Widget *parent) : GLCanvas(parent) {
+            mLoaded = false;
+            mFileName = "";
             mShader.init(
                     /* An identifying name */
                     "image shader",
@@ -63,8 +65,27 @@ class MyGLCanvas : public GLCanvas {
             mShader.uploadAttrib("texCoords", texCoords);
 
             mShader.setUniform("usingTex", false);
+            glGenTextures(1, &mTexture);
         }
 
+        void SetFileName(string f) {
+            mFileName = f;
+            mLoaded = true;
+        }
+        void Clear() {
+            mLoaded = false;
+            mShader.bind();
+            mShader.setUniform("usingTex", false);
+            Vector2i size = mSize;
+            int w = 400; int h = 400;
+            setFixedSize(Vector2i(w,h));
+            setSize(Vector2i(w,h));
+            Vector2i ssize = screen()->size();
+            int x = ssize[0] + (mSize[0] - size[0]);
+            int y = ssize[1] + (mSize[1] - size[1]);
+            screen()->setSize(Vector2i(x, y));
+            screen()->performLayout();
+        }
         void LoadTexture(string path) {
             mShader.bind();
             int w, h, comp;
@@ -75,9 +96,7 @@ class MyGLCanvas : public GLCanvas {
                 cout << "Failed to load the image: " << path << endl;
                 return;
             }
-            glGenTextures(1, &mTexture);
             glBindTexture(GL_TEXTURE_2D, mTexture);
-            cout << comp << endl;
             //if (comp == 3)
             //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
             //else
@@ -90,15 +109,32 @@ class MyGLCanvas : public GLCanvas {
             stbi_image_free(image);
 
             mShader.setUniform("usingTex", true);
-            cout << "loaded image: " << path  << ", with: w=" << w << ", h=" << h << endl;
+            Vector2i size = mSize;
+            setFixedSize(Vector2i(w,h));
+            setSize(Vector2i(w,h));
+            Vector2i ssize = screen()->size();
+            int x = ssize[0] + (mSize[0] - size[0]);
+            int y = ssize[1] + (mSize[1] - size[1]);
+            screen()->setSize(Vector2i(x, y));
+            screen()->performLayout();
+            // cout << "loaded image: " << path  << ", with: w=" << w << ", h=" << h << endl;
         }
 
         ~MyGLCanvas() {
             mShader.free();
         }
+        // virtual void draw(NVGcontext* ctx) {
+        //     screen()->performLayout();
+        //     GLCanvas::draw(ctx);
+        // }
+
 
         virtual void drawGL() override {
             mShader.bind();
+            if (mLoaded) {
+                LoadTexture(mFileName);
+                mLoaded = false;
+            }
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, mTexture);
 
@@ -110,6 +146,8 @@ class MyGLCanvas : public GLCanvas {
     private:
         GLShader mShader;
         GLuint mTexture;
+        bool mLoaded;
+        std::string mFileName;
 };
 
 #endif  // SRC_INCLUDE_CANVAS_H_

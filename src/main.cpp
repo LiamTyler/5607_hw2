@@ -17,8 +17,7 @@ void run(ProgressBar* p, TextBox* t, string s, MyGLCanvas* canvas) {
     StatusReporter status(p, t);
     tracer->Trace(&status);
     
-    // cout << canvas << endl;
-    // canvas->LoadTexture(tracer->getOutputFileName());
+    canvas->SetFileName(tracer->getOutputFileName());
 }
 
 int main(int argc, char* argv[]) {
@@ -31,14 +30,15 @@ int main(int argc, char* argv[]) {
     }
 
     nanogui::init();
-    Screen *screen = new Screen(Vector2i(800, 800), "Ray Tracer");
+    Screen *screen = new Screen(Vector2i(650, 500), "Ray Tracer");
+    // screen->setLayout(new BoxLayout(Orientation::Horizontal, Alignment::Fill, 10, 10));
     Window *w = new Window(screen, "Control Panel");
     w->setPosition(Vector2i(10, 10));
     w->setLayout(new GroupLayout());
 
     new Label(w, "Scene Selection", "sans-bold");
     Button *b = new Button(w, "Open Scene");
-    string scene_file = "/home/liam/Documents/School/5607/hw2/scenes/scene2.scn";
+    string scene_file = "../scenes/scene2.scn";
     b->setCallback([&] {
         scene_file = file_dialog({ { "scn", "Scene File" }}, false);
     });
@@ -51,9 +51,9 @@ int main(int argc, char* argv[]) {
     TextBox * textBox = new TextBox(w);
     textBox->setValue("0");
     textBox->setUnits("%");
-    Button* b2 = new Button(w, "Load Traced Image");
+    Button* b2 = new Button(w, "Clear Canvas");
     w = new Window(screen, "Rendered Scene");
-    w->setPosition(Vector2i(300, 10));
+    w->setPosition(Vector2i(200, 10));
     w->setLayout(new GroupLayout());
 
     MyGLCanvas* canvas = new MyGLCanvas(w);
@@ -70,8 +70,7 @@ int main(int argc, char* argv[]) {
         }
     });
     b2->setCallback([&] {
-        // cout << canvas << endl;
-        canvas->LoadTexture(tracer->getOutputFileName());
+        canvas->Clear();
     });
 
     screen->setVisible(true);

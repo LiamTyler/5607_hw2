@@ -117,6 +117,42 @@ vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
         // specular
         color += lcolor*Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
     }
+
+    // loop through every spot light
+    for (int i = 0; i < spot_lights_.size(); i++) {
+        // update light vector
+        SpotLight *light = spot_lights_[i];
+        vec3 dir = normalize(light->getDirection());
+        vec3 l = p - light->getPosition();
+        float d = glm::length(l);
+        l = normalize(l);
+
+        float angle1 = light->getAngle1();
+        float angle2 = light->getAngle1();
+        float lAngle = std::acos(dot(l, dir)) * 180 / M_PI;
+        if (lAngle > angle2)
+            continue;
+        vec3 I = (1.0/(d*d)) * light->getColor();
+        if (lAngle >= angle1) {
+            lAngle = (lAngle - angle1) / (angle2 - angle1);
+            // if (
+            // lAngle *= M_PI / 2;
+            // I = std::cos(lAngle) * 
+            I = lAngle * I;
+        }
+
+        l = -l;
+        // cast shadow ray
+        Ray shadow(p + 0.01*l, l);
+        Shape *shadow_obj = Intersect(shadow);
+        if (shadow_obj)
+            continue;
+
+        // diffuse
+        color += I*Kd*std::max(0.f, dot(n, l));
+        // specular
+        color += I*Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
+    }
     color.x = std::min(1.0f, std::max(0.f, color.x));
     color.y = std::min(1.0f, std::max(0.f, color.y));
     color.z = std::min(1.0f, std::max(0.f, color.z));
