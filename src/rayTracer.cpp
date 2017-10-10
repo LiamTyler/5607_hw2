@@ -128,14 +128,15 @@ vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
         l = normalize(l);
 
         float angle1 = light->getAngle1();
-        float angle2 = light->getAngle1();
+        float angle2 = light->getAngle2();
         float lAngle = std::acos(dot(l, dir)) * 180 / M_PI;
+        // cout << lAngle << endl;
         if (lAngle > angle2)
             continue;
         vec3 I = (1.0/(d*d)) * light->getColor();
         if (lAngle >= angle1) {
-            lAngle = (lAngle - angle1) / (angle2 - angle1);
-            // if (
+            lAngle = 1 - (lAngle - angle1) / (angle2 - angle1);
+            // lAngle = std::pow(lAngle, 10);
             // lAngle *= M_PI / 2;
             // I = std::cos(lAngle) * 
             I = lAngle * I;
