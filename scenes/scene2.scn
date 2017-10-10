@@ -1,6 +1,6 @@
 # camera -6 2 -4 .77 0 .64 0 1 0 35
 camera 0 0 0 0 0 1 0 1 0 45
-output_image spheres1.bmp
+output_image spheres1.png
 film_resolution 600 600
 # background .8 .8 .8
 background 1 1 1 

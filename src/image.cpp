@@ -17,7 +17,7 @@ Image::~Image() {
 }
 
 void Image::Write(std::string fname) {
-    unsigned char out[width_*height_*3];
+    unsigned char out[width_*height_*4];
     int b = 0;
     for (int r = 0; r < height_; r++) {
         for (int c = 0; c < width_; c++) {
@@ -25,8 +25,25 @@ void Image::Write(std::string fname) {
             out[b++] = (unsigned char) 255*p.r;
             out[b++] = (unsigned char) 255*p.g;
             out[b++] = (unsigned char) 255*p.b;
+            out[b++] = (unsigned char) 255*p.a;
         }
     }
 
-    stbi_write_bmp(fname.c_str(), width_, height_, 3, out);
+    int i = fname.length();
+    while (fname[--i] != '.' && i >= 0);
+    if (i < 0) {
+        std::cout << "Invalid image file name: " << fname << std::endl;
+        return;
+    }
+
+    switch(fname[i+1]) {
+        case 'p':
+            stbi_write_png(fname.c_str(), width_, height_, 4, out, width_*4);
+            break;
+        case 'b':
+            stbi_write_bmp(fname.c_str(), width_, height_, 4, out);
+            break;
+        default:
+            std::cout << "Invalid image file name: " << fname << std::endl;
+    }
 }

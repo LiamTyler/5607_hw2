@@ -68,17 +68,20 @@ class MyGLCanvas : public GLCanvas {
         void LoadTexture(string path) {
             mShader.bind();
             int w, h, comp;
-            unsigned char* image = stbi_load(path.c_str(), &w, &h, &comp, STBI_rgb);
+            unsigned char * image;
+
+            image = stbi_load(path.c_str(), &w, &h, &comp, 4);
             if (image == nullptr) {
                 cout << "Failed to load the image: " << path << endl;
                 return;
             }
             glGenTextures(1, &mTexture);
             glBindTexture(GL_TEXTURE_2D, mTexture);
-            if (comp == 3)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+            cout << comp << endl;
+            //if (comp == 3)
+            //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            //else
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
             glBindTexture(GL_TEXTURE_2D, mTexture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

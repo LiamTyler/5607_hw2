@@ -17,8 +17,8 @@ void run(ProgressBar* p, TextBox* t, string s, MyGLCanvas* canvas) {
     StatusReporter status(p, t);
     tracer->Trace(&status);
     
-    cout << canvas << endl;
-    canvas->LoadTexture(tracer->getOutputFileName());
+    // cout << canvas << endl;
+    // canvas->LoadTexture(tracer->getOutputFileName());
 }
 
 int main(int argc, char* argv[]) {
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
         }
     });
     b2->setCallback([&] {
-        cout << canvas << endl;
+        // cout << canvas << endl;
         canvas->LoadTexture(tracer->getOutputFileName());
     });
 
