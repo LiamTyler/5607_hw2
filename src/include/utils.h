@@ -5,6 +5,12 @@
 #include "glm/ext.hpp"
 #include <iostream>
 
+enum SamplingMethod {
+    BASIC,
+    SUPER,
+    ADAPTIVE
+};
+
 using glm::vec3;
 using glm::vec4;
 

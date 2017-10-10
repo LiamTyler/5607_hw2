@@ -20,6 +20,7 @@ void Parser::Init() {
     ambient_light_ = new AmbientLight();
     current_material_ = new Material();
     materials_.push_back(current_material_);
+    sampling_method_ = BASIC;
 }
 
 bool Parser::Parse() {
@@ -89,6 +90,10 @@ bool Parser::Parse() {
             ambient_light_->setColor(c);
         } else if (command == "max_depth"){
             infile_ >> max_depth_;
+        } else if (command == "sampling_method"){
+            int sm;
+            infile_ >> sm;
+            sampling_method_ = (SamplingMethod) sm;
         } else {
             getline(infile_, line);
             cout << "WARNING. Do not know command: " << command << endl;

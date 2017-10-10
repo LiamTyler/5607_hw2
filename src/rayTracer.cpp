@@ -57,6 +57,7 @@ void RayTracer::Parse(string filename) {
 
     background_ = vec4(parser_->getBackground(), 1);
     max_depth_ = parser_->getMaxDepth();
+    sampling_method_ = parser_->getSamplingMethod();
 }
 
 vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
@@ -201,35 +202,48 @@ void RayTracer::Trace(StatusReporter* statusReporter) {
     for (int r = 0; r < height; r++) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {
+            vec4 newColor;
             // Compute ray
             vec3 p = py + c*dx;
             vec3 dir = normalize(p - pos);
             Ray ray(pos, dir);
-
-            // See if ray hits anything
             hit_obj = Intersect(ray);
 
-            // Compute color
             if (hit_obj) {
-                image_->SetPixel(r, c, GetColor(hit_obj, ray));
+                newColor = GetColor(hit_obj, ray);
             } else {
-                image_->SetPixel(r, c, background_);
+                newColor = background_;
             }
+
+            if (sampling_method_ == 1) {
+                int w = 2;
+                int h = 2; 
+                vec3 dx2 = (1.0/w)*dx;
+                vec3 dy2 = (1.0/h)*dy;
+                vec3 ulp = p + .5*dx2 + .5*dy2;
+                for (int r2 = 0; r2 < h; r2++) {
+                    vec3 py2 = ulp + r2*dy2;
+                    for (int c2 = 0; c2 < w; c2++) {
+                        p = py2 + c2*dx2;
+                        dir = normalize(p - pos);
+                        ray = Ray(pos, dir);
+                        hit_obj = Intersect(ray);
+
+                        if (hit_obj) {
+                            newColor += GetColor(hit_obj, ray);
+                        } else {
+                            newColor += background_;
+                        }
+                    }
+                }
+                newColor *= (1.0/(w*h+1));
+            } else {
+            }
+            image_->SetPixel(r, c, newColor);
         }
         if (statusReporter) {
             statusReporter->setValue(r / (float) height);
         }
-
-        /*
-        if (rand() % 50 == 0) {
-            int start;
-            int end = time(NULL);
-            start = end;
-            while(end - start < 1) {
-                end = time(NULL);
-            }
-        }
-        */
     }
 
     // write final image out

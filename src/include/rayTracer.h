@@ -42,6 +42,7 @@ class RayTracer {
 
         vec4 background_;
         int max_depth_;
+        SamplingMethod sampling_method_;
 };
 
 #endif  // SRC_INCLUDE_RAYTRACER_H_

@@ -41,6 +41,7 @@ class Parser {
         AmbientLight* getAmbientLight() { return ambient_light_; }
         vector<Sphere*> getSpheres() { return spheres_; }
         vector<Material*> getMaterials() { return materials_; }
+        SamplingMethod getSamplingMethod() { return sampling_method_; }
 
     private:
         string filename_;
@@ -55,6 +56,7 @@ class Parser {
         Material* current_material_;
         vector<Sphere*> spheres_;
 
+        SamplingMethod sampling_method_;
         vec3 background_;
         int max_depth_;
 };
