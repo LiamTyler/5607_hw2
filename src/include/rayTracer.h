@@ -10,6 +10,7 @@
 #include "include/shapes.h"
 #include "include/parser.h"
 #include "include/image.h"
+#include "include/statusReporter.h"
 
 using std::string;
 using glm::vec3;
@@ -20,9 +21,11 @@ class RayTracer {
         RayTracer();
         ~RayTracer();
         void Parse(string filename);
-        void Trace();
+        void Trace(StatusReporter* statusReporter);
+        void Trace() { Trace(nullptr); }
         vec4 GetColor(Shape* hit_obj, Ray ray);
         Shape* Intersect(Ray &ray);
+        string getOutputFileName() { return camera_->getOutputImage(); }
 
     private:
         Image* image_;

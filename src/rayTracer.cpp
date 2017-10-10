@@ -1,5 +1,6 @@
 #include "include/rayTracer.h"
 #include "include/ray.h"
+#include <stdlib.h>
 
 using std::cout;
 using std::endl;
@@ -125,7 +126,7 @@ Shape* RayTracer::Intersect(Ray& ray) {
     return hit_obj;
 }
 
-void RayTracer::Trace() {
+void RayTracer::Trace(StatusReporter* statusReporter) {
     int width = camera_->getWidth();
     int height = camera_->getHeight();
     image_ = new Image(width, height);
@@ -158,6 +159,20 @@ void RayTracer::Trace() {
                 image_->SetPixel(r, c, background_);
             }
         }
+        if (statusReporter) {
+            statusReporter->setValue(r / (float) height);
+        }
+
+        /*
+        if (rand() % 50 == 0) {
+            int start;
+            int end = time(NULL);
+            start = end;
+            while(end - start < 1) {
+                end = time(NULL);
+            }
+        }
+        */
     }
 
     // write final image out

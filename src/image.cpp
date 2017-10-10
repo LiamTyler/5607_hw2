@@ -1,4 +1,6 @@
 #include "include/image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "include/stb_image_write.h"
 
 Image::Image() : Image(640, 480) {}
 

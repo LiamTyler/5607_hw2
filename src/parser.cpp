@@ -13,26 +13,13 @@ Parser::Parser(string filename) {
 }
 
 Parser::~Parser() {
-    if (camera_)
-        delete camera_;
-    if (ambient_light_)
-        delete ambient_light_;
-    for (int i = 0; i < directional_lights_.size(); i++)
-        delete directional_lights_[i];
-    for (int i = 0; i < point_lights_.size(); i++)
-        delete point_lights_[i];
-    for (int i = 0; i < spot_lights_.size(); i++)
-        delete spot_lights_[i];
-    for (int i = 0; i < spheres_.size(); i++)
-        delete spheres_[i];
-    for (int i = 0; i < materials_.size(); i++)
-        delete materials_[i];
 }
 
 void Parser::Init() {
     camera_ = new Camera();
     ambient_light_ = new AmbientLight();
     current_material_ = new Material();
+    materials_.push_back(current_material_);
 }
 
 bool Parser::Parse() {

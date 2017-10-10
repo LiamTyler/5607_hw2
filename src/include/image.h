@@ -1,7 +1,3 @@
-#define STBI_IMAGE_WRITE_IMPLEMENTATION
-#define STBI_IMAGE_IMPLEMENTATION
-#include "include/stb_image.h"
-#include "include/stb_image_write.h"
 #include "include/utils.h"
 #include <string>
 
