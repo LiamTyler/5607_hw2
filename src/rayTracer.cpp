@@ -85,6 +85,7 @@ vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
         vec3 l = light->getPosition() - p;
         float d = glm::length(l);
         l = normalize(l);
+        vec3 I = (1.0 / (d*d)) * light->getColor();
 
         // cast shadow ray
         Ray shadow(p + 0.01*l, l);
@@ -93,9 +94,9 @@ vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
             continue;
 
         // diffuse
-        color += Kd*std::max(0.f, dot(n, l));
+        color += I*Kd*std::max(0.f, dot(n, l));
         // specular
-        color += Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
+        color += I*Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
     }
     color.x = std::min(1.0f, std::max(0.f, color.x));
     color.y = std::min(1.0f, std::max(0.f, color.y));
