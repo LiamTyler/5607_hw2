@@ -6,9 +6,12 @@ film_resolution 600 600
 background 1 1 1 
 
 ambient_light .1 .1 .1
-point_light  1 -1 1 -150 200 200
+point_light  12000 12000 12000 -150 200 200
 
-point_light  -1 1 1 150 -100 200
+point_light  12000 12000 12000 150 -100 200
+point_light  32000 32000 32000 0 200 200
+
+directional_light .7 .7 .7 1 1 1
 
 material 1 1 1  0 0 1  1 1 1  10  0 0 0   0
 sphere -100 50 300 100 

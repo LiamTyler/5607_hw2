@@ -98,6 +98,25 @@ vec4 RayTracer::GetColor(Shape* hit_obj, Ray ray) {
         // specular
         color += I*Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
     }
+
+    // loop through every directional light
+    for (int i = 0; i < directional_lights_.size(); i++) {
+        // update light vector
+        DirectionalLight *light = directional_lights_[i];
+        vec3 l = normalize(-light->getDirection());
+        vec3 lcolor = light->getColor();
+
+        // cast shadow ray
+        Ray shadow(p + 0.01*l, l);
+        Shape *shadow_obj = Intersect(shadow);
+        if (shadow_obj)
+            continue;
+
+        // diffuse
+        color += lcolor*Kd*std::max(0.f, dot(n, l));
+        // specular
+        color += lcolor*Ks*std::pow(std::max(0.f, dot(v, reflect(l,n))), s_power);
+    }
     color.x = std::min(1.0f, std::max(0.f, color.x));
     color.y = std::min(1.0f, std::max(0.f, color.y));
     color.z = std::min(1.0f, std::max(0.f, color.z));
