@@ -27,6 +27,9 @@ class RayTracer {
         vec4 GetColor(Shape* hit_obj, Ray& ray);
         vec4 ComputeLighting(Shape* hit_obj, Ray& ray);
         Shape* Intersect(Ray &ray);
+        vec4 BasicSample(vec3& pos, vec3& p, vec3& dx, vec3& dy);
+        vec4 SuperSample(vec3& pos, vec3& p, vec3& dx, vec3& dy);
+        vec4 AdaptiveSample(vec3& pos, vec3& p, vec3& dx, vec3& dy);
         string getOutputFileName() { return camera_->getOutputImage(); }
 
     private:
@@ -34,14 +37,10 @@ class RayTracer {
         Parser* parser_;
 
         Camera * camera_;
-        vector<DirectionalLight *> directional_lights_;
-        vector<PointLight *> point_lights_;
-        vector<SpotLight *> spot_lights_;
-        AmbientLight* ambient_light_;
         vector<Light*> lights_;
+        vector<Shape*> shapes_;
         
         vector<Material*> materials_;
-        vector<Sphere*> spheres_;
 
         vec4 background_;
         int max_depth_;
