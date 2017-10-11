@@ -15,7 +15,7 @@ void run(ProgressBar* p, TextBox* t, string s, MyGLCanvas* canvas) {
     tracer->Parse(s);
 
     StatusReporter status(p, t);
-    tracer->Trace(&status);
+    tracer->Run(&status);
     
     canvas->SetFileName(tracer->getOutputFileName());
 }
@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     if (argc == 2) {
         tracer = new RayTracer;
         tracer->Parse(argv[1]);
-        tracer->Trace();
+        tracer->Run();
         delete tracer;
         return 0;
     }

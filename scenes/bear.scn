@@ -2,7 +2,8 @@
 #Model by Moses Adeagbo
 
 #Camera Set-up
-camera 1.5 4 5.5 -.3 -.45 -1.1 0 1 0 26
+#camera 1.5 4 5.5 -.3 -.45 -1.1 0 1 0 26
+camera 1.5 4 -5.5  -.3 -.45 1.1  0 1 0  26
 output_image bear.bmp
 #film_resolution 800 600
 #film_resolution 1024 768

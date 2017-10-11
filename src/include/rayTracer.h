@@ -21,9 +21,11 @@ class RayTracer {
         RayTracer();
         ~RayTracer();
         void Parse(string filename);
-        void Trace(StatusReporter* statusReporter);
-        void Trace() { Trace(nullptr); }
-        vec4 GetColor(Shape* hit_obj, Ray ray);
+        void Run(StatusReporter* statusReporter);
+        void Run() { Run(nullptr); }
+        vec4 TraceRay(Ray& ray);
+        vec4 GetColor(Shape* hit_obj, Ray& ray);
+        vec4 ComputeLighting(Shape* hit_obj, Ray& ray);
         Shape* Intersect(Ray &ray);
         string getOutputFileName() { return camera_->getOutputImage(); }
 
@@ -36,6 +38,7 @@ class RayTracer {
         vector<PointLight *> point_lights_;
         vector<SpotLight *> spot_lights_;
         AmbientLight* ambient_light_;
+        vector<Light*> lights_;
         
         vector<Material*> materials_;
         vector<Sphere*> spheres_;

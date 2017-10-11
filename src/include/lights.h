@@ -1,15 +1,25 @@
 #ifndef SRC_INCLUDE_LIGHTS_H_
 #define SRC_INCLUDE_LIGHTS_H_
 
-#include "glm/glm.hpp"
+#include "include/utils.h"
+#include "include/material.h"
+#include "include/shapes.h"
+#include <cmath>
+#include <functional>
 
-using glm::vec3;
+using std::max;
+using std::pow;
+using glm::dot;
+using glm::length;
+using glm::normalize;
 
 class Light {
     public:
         Light() : Light(vec3(0,0,0)) {}
         Light(vec3 c) : color_(c) {}
 
+        virtual vec3 ComputeLighting(vec3& v, vec3& p, vec3& n,
+                Material* m, std::function<Shape*(Ray&)> Intersect) = 0;
         void setColor(vec3 c) { color_ = c; }
         vec3 getColor() { return color_; }
 
@@ -20,7 +30,20 @@ class Light {
 class DirectionalLight : public Light {
     public:
         DirectionalLight() : DirectionalLight(vec3(0,0,0), vec3(0,0,0)) {}
-        DirectionalLight(vec3 c, vec3 d) : Light(c), direction_(d) {}
+        DirectionalLight(vec3 c, vec3 d) : Light(c), direction_(normalize(d)) {}
+        virtual vec3 ComputeLighting(vec3& v, vec3& p, vec3& n,
+                Material* m, std::function<Shape*(Ray&)> Intersect) {
+            vec3 l = -direction_;
+            vec3 ret(0,0,0);
+            Ray shadow(p + 0.01*l, l);
+            Shape* shadow_obj = Intersect(shadow);
+            if (shadow_obj)
+                return ret;
+            ret += color_*m->getDiffuse()*std::max(0.f, dot(n, l));
+            ret += color_*m->getSpecular()*pow(max(0.f,
+                        dot(v, glm::reflect(l,n))), m->getPower());
+            return ret;
+        }
 
         void setDirection(vec3 d) { direction_ = d; }
         vec3 getDirection() { return direction_; }
@@ -33,6 +56,22 @@ class PointLight : public Light {
     public:
         PointLight() : PointLight(vec3(0,0,0), vec3(0,0,0)) {}
         PointLight(vec3 c, vec3 p) : Light(c), position_(p) {}
+        virtual vec3 ComputeLighting(vec3& v, vec3& p, vec3& n,
+                Material* m, std::function<Shape*(Ray&)> Intersect) {
+            vec3 ret(0,0,0);
+            vec3 l = position_ - p;;
+            float d = length(l);
+            l = normalize(l);
+            Ray shadow(p + 0.01*l, l);
+            Shape* shadow_obj = Intersect(shadow);
+            if (shadow_obj && length(shadow.Evaluate() - p) < d)
+                return ret;
+
+            vec3 I = (1.0 / (d*d)) * color_;
+            ret += I*m->getDiffuse()*max(0.f, dot(n, l));
+            ret += I*m->getSpecular()*pow(max(0.f, dot(v, glm::reflect(l,n))), m->getPower());;
+            return ret;
+        }
 
         void setPosition(vec3 p) { position_ = p; }
         vec3 getPosition() { return position_; }
@@ -45,7 +84,36 @@ class SpotLight : public Light {
     public:
         SpotLight() : SpotLight(vec3(0,0,0), vec3(0,0,0), vec3(0,0,0), 0, 0) {}
         SpotLight(vec3 c, vec3 p, vec3 d, float a1, float a2) :
-            Light(c), position_(p), direction_(d), angle1_(a1), angle2_(a2) {}
+            Light(c), position_(p), direction_(normalize(d)), angle1_(a1), angle2_(a2) {}
+
+        virtual vec3 ComputeLighting(vec3& v, vec3& p, vec3& n,
+                Material* m, std::function<Shape*(Ray&)> Intersect) {
+
+            vec3 ret(0,0,0);
+            vec3 l = p - position_;
+            float d = length(l);
+            l = normalize(l);
+
+            float angle = std::acos(dot(l, direction_)) * 180 / M_PI;
+            if (angle > angle2_)
+                return ret;
+            vec3 I = (1.0/(d*d)) * color_; 
+            if (angle >= angle1_) {
+                angle = 1 - (angle - angle1_) / (angle2_ - angle1_);
+                I = angle * I;
+            }
+
+            l = -l;
+            // cast shadow ray
+            Ray shadow(p + 0.01*l, l);
+            Shape *shadow_obj = Intersect(shadow);
+            if (shadow_obj && length(shadow.Evaluate() - p) < d)
+                return ret;
+
+            ret += I*m->getDiffuse()*max(0.f, dot(n, l));
+            ret += I*m->getSpecular()*pow(max(0.f, dot(v, glm::reflect(l,n))), m->getPower());
+            return ret;
+        }
 
         void setDirection(vec3 d) { direction_ = d; }
         vec3 getDirection() { return direction_; }
@@ -67,6 +135,10 @@ class AmbientLight : public Light {
     public:
         AmbientLight() : AmbientLight(vec3(0,0,0)) {}
         AmbientLight(vec3 c) : Light(c) {}
+        virtual vec3 ComputeLighting(vec3& v, vec3& p, vec3& n,
+                Material* m, std::function<Shape*(Ray&)> Intersect) {
+            return m->getAmbient() * color_;
+        }
 };
 
 #endif  // SRC_INCLUDE_LIGHTS_H_
