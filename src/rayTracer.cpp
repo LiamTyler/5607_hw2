@@ -203,24 +203,30 @@ void RayTracer::Trace(StatusReporter* statusReporter) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {
             vec4 newColor;
+            vec3 p, dir;
+            Ray ray;
             // Compute ray
-            vec3 p = py + c*dx;
-            vec3 dir = normalize(p - pos);
-            Ray ray(pos, dir);
-            hit_obj = Intersect(ray);
+            // if (sampling_method_ == BASIC || sampling_method_ == SUPER) {
+            if (true) {
+                p = py + c*dx;
+                dir = normalize(p - pos);
+                ray = Ray (pos, dir);
+                hit_obj = Intersect(ray);
 
-            if (hit_obj) {
-                newColor = GetColor(hit_obj, ray);
-            } else {
-                newColor = background_;
+                if (hit_obj) {
+                    newColor = GetColor(hit_obj, ray);
+                } else {
+                    newColor = background_;
+                }
             }
 
-            if (sampling_method_ == 1) {
-                int w = 2;
-                int h = 2; 
+            if (sampling_method_ == SUPER) {
+                int w = 3;
+                int h = 3; 
                 vec3 dx2 = (1.0/w)*dx;
                 vec3 dy2 = (1.0/h)*dy;
-                vec3 ulp = p + .5*dx2 + .5*dy2;
+                vec3 ulp = p - .5*dx - .5*dy;
+                ulp += .5*dx2 + .5*dy2;
                 for (int r2 = 0; r2 < h; r2++) {
                     vec3 py2 = ulp + r2*dy2;
                     for (int c2 = 0; c2 < w; c2++) {
@@ -237,8 +243,59 @@ void RayTracer::Trace(StatusReporter* statusReporter) {
                     }
                 }
                 newColor *= (1.0/(w*h+1));
-            } else {
+            } else if (sampling_method_ == ADAPTIVE) {
+                vec4 deltaColor = vec4(0,0,0,0);
+                vec4 prevColor = newColor;
+                vec3 dx2 = dx;
+                vec3 dy2 = dy;
+                vec3 ulp = p - .5*dx - .5*dy;
+                for (int r2 = 0; r2 < 2; r2++) {
+                    vec3 py2 = ulp + r2*dy2;
+                    for (int c2 = 0; c2 < 2; c2++) {
+                        vec3 p2 = py2 + c2*dx2;
+                        dir = normalize(p2 - pos);
+                        ray = Ray(pos, dir);
+                        hit_obj = Intersect(ray);
+                        vec4 tmp;
+                        if (hit_obj) {
+                            tmp = GetColor(hit_obj, ray);
+                        } else {
+                            tmp = background_;
+                        }
+                        deltaColor += tmp - prevColor;
+                        prevColor = tmp;
+                        newColor += tmp;
+                    }
+                }
+                if (length(deltaColor) > 1) {
+                    dx2 = dx / 2;
+                    dy2 = dy / 2;
+                    ulp = p - .5*dx2 - .5*dy2;
+                    for (int r2 = 0; r2 < 2; r2++) {
+                        vec3 py2 = ulp + r2*dy2;
+                        for (int c2 = 0; c2 < 2; c2++) {
+                            vec3 p2 = py2 + c2*dx2;
+                            dir = normalize(p2 - pos);
+                            ray = Ray(pos, dir);
+                            hit_obj = Intersect(ray);
+                            vec4 tmp;
+                            if (hit_obj) {
+                                tmp = GetColor(hit_obj, ray);
+                            } else {
+                                tmp = background_;
+                            }
+                            // deltaColor += tmp - prevColor;
+                            // prevColor = tmp;
+                            newColor += tmp;
+                        }
+                    }
+                    newColor /= 9.0;
+                } else {
+                    newColor /= 5.0;
+                }
+
             }
+
             image_->SetPixel(r, c, newColor);
         }
         if (statusReporter) {
