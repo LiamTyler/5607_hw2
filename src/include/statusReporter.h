@@ -9,11 +9,13 @@ using namespace nanogui;
 
 class StatusReporter {
     public:
-        StatusReporter() : StatusReporter(nullptr, nullptr) {}
-        StatusReporter(ProgressBar* p, TextBox* t) {
+        StatusReporter() : StatusReporter(nullptr, nullptr, nullptr) {}
+        StatusReporter(ProgressBar* p, FloatBox<float>* prog, FloatBox<float>* time) {
             pbar_ = p;
-            tbox_ = t;
+            progress_gui_ = prog;
+            time_gui_ = time;
             progress_ = 0;
+            time_ = 0;
         }
         ~StatusReporter() {
             progress_ = 1;
@@ -29,20 +31,24 @@ class StatusReporter {
         }
 
         float getProgress() { return progress_; }
-        void setValue(float val) {
-            progress_ = val;
+
+        void Update(float percent, float time) {
+            progress_ = percent;
+            time_ = time;
             Update();
         }
         void Update() {
             pbar_->setValue(progress_);
-            tbox_->setValue(std::to_string((int) 100* progress_));
+            progress_gui_->setValue(100 * progress_);
+            time_gui_->setValue(time_);
         }
                 
     protected:
         ProgressBar* pbar_;
-        TextBox* tbox_;
+        FloatBox<float>* progress_gui_;
+        FloatBox<float>* time_gui_;
         float progress_;
+        float time_;
 };
 
 #endif  // SRC_INCLUDE_MATERIAL_H_
-

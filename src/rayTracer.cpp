@@ -2,11 +2,8 @@
 #include "include/ray.h"
 #include <stdlib.h>
 #include <functional>
+#include <chrono>
 
-using std::cout;
-using std::endl;
-using std::string;
-using std::vector;
 using glm::vec3;
 using glm::vec4;
 using glm::normalize;
@@ -15,6 +12,8 @@ using glm::cross;
 using glm::reflect;
 using glm::length;
 
+using namespace std;
+using namespace std::chrono;
 using namespace std::placeholders;
 
 RayTracer::RayTracer() {
@@ -134,8 +133,11 @@ vec4 RayTracer::TraceRay(Ray& ray) {
         return background_;
     }
 }
+    high_resolution_clock::time_point end = high_resolution_clock::now();
 
 void RayTracer::Run(StatusReporter* statusReporter) {
+    high_resolution_clock::time_point start_time = high_resolution_clock::now();
+    high_resolution_clock::time_point current_time;
     // Get screen dimensions, construct image
     int width = camera_->getWidth();
     int height = camera_->getHeight();
@@ -170,7 +172,9 @@ void RayTracer::Run(StatusReporter* statusReporter) {
             image_->SetPixel(r, c, color);
         }
         if (statusReporter) {
-            statusReporter->setValue(r / (float) height);
+            current_time = high_resolution_clock::now();
+            float dt = duration_cast<milliseconds>(current_time - start_time).count();
+            statusReporter->Update(r / (float) height, dt / 1000);
         }
     }
 
