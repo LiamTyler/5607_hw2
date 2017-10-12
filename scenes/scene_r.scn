@@ -1,0 +1,30 @@
+sampling_method 2
+
+camera 0 0 -100 0 0 1 0 1 0  30 
+#camera 0 300 100   0 -1 1   0 1 1   45
+output_image spheres2_0.png
+film_resolution 600 600
+# background .8 .8 .8
+background 1 1 1 
+
+ambient_light .1 .1 .1
+point_light  12000 12000 12000 -150 200 200
+
+point_light  12000 12000 12000 150 -100 200
+#point_light  32000 32000 32000 0 200 200
+
+directional_light .7 .7 .7 1 1 1
+spot_light 15000 15000 15000  50 -100 100   0 1 1  10 40 
+point_light 15000 15000 15000  0 -100 100
+
+material 1 1 1  0 0 1  1 1 1  10  0 0 0   0
+sphere -100 50 300 100 
+
+material 1 1 1  0 0 0  1 1 1  50  0 0 0   0
+sphere 50 -50 300 100 
+
+material 1 1 1  0 1 0  1 1 1  100  0 0 0   0
+sphere 100 100 100 70 
+
+material 1 1 1  1 1 0  1 1 1  100  0 0 0   0
+sphere 200 100 200 110

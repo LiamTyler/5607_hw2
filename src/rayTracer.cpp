@@ -75,11 +75,25 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray) {
     vec3 n = hit_obj->getNormal(p);
 
     vec3 color = vec3(0,0,0);
+
+    // Pass in intersect function to lighting functions
     auto fp = std::bind(&RayTracer::Intersect, this, _1);
 
+    // Do phong shading
     for (vector<Light*>::iterator it = lights_.begin(); it != lights_.end(); ++it) {
         color += (*it)->ComputeLighting(v, p, n, m, fp);
     }
+
+    // Compute reflected and refracting lighting
+    vec3 r = reflect(ray.dir, n);
+    Ray mirror(p + 0.001 * r, r);
+    color += m->getSpecular() * vec3(TraceRay(mirror));
+
+    r = glm::refract(ray.dir, n, 1.0f / m->getIOR());
+    Ray refracted(p + 0.0001 * r, r);
+    color += m->getTransmissive() * vec3(TraceRay(refracted));
+
+    // clamp
     color.x = std::min(1.0f, std::max(0.f, color.x));
     color.y = std::min(1.0f, std::max(0.f, color.y));
     color.z = std::min(1.0f, std::max(0.f, color.z));
@@ -90,9 +104,11 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray) {
 Shape* RayTracer::Intersect(Ray& ray) {
     Ray closest;
     Shape* hit_obj = nullptr;
+    // Loop over every shape in scene
     for (int i = 0; i < shapes_.size(); i++) {
         if (shapes_[i]->Intersect(ray)) { 
             if (hit_obj) {
+                // Record if object is the closest so far
                 if (ray.tmin < closest.tmin) {
                     closest = ray;
                     hit_obj = shapes_[i];
@@ -138,13 +154,14 @@ void RayTracer::Run(StatusReporter* statusReporter) {
     vec3 dy = -up;
     vec3 ul = pos + d * dir + up * (height / 2.0) - (width / 2.0) * dx;
 
-    // Get which 
+    // Get which sampling method is specified
     auto Sample = &RayTracer::BasicSample;
     if (sampling_method_ == SUPER)
         Sample = &RayTracer::SuperSample;
     else if (sampling_method_ == ADAPTIVE)
         Sample = &RayTracer::AdaptiveSample;
 
+    // Loop through each pixel
     for (int r = 0; r < height; r++) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {
@@ -157,6 +174,7 @@ void RayTracer::Run(StatusReporter* statusReporter) {
         }
     }
 
+    // Save the final image
     image_->Write(camera_->getOutputImage());
 }
 
@@ -167,11 +185,11 @@ vec4 RayTracer::BasicSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
 }
 
 vec4 RayTracer::SuperSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
-    vec4 newColor(0,0,0,0);
-    int w = 3;
-    int h = 3; 
-    vec3 dir;
-    Ray ray;
+    vec3 dir = normalize(p - pos);
+    Ray ray(pos, dir);
+    vec4 newColor = TraceRay(ray);
+    int w = 2;
+    int h = 2; 
     vec3 dx2 = (1.0/w)*dx;
     vec3 dy2 = (1.0/h)*dy;
     vec3 ulp = p - .5*dx - .5*dy;
