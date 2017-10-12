@@ -23,9 +23,8 @@ class RayTracer {
         void Parse(string filename);
         void Run(StatusReporter* statusReporter);
         void Run() { Run(nullptr); }
-        vec4 TraceRay(Ray& ray);
-        vec4 GetColor(Shape* hit_obj, Ray& ray);
-        vec4 ComputeLighting(Shape* hit_obj, Ray& ray);
+        vec4 TraceRay(Ray& ray, int depth);
+        vec4 ComputeLighting(Shape* hit_obj, Ray& ray, int depth);
         Shape* Intersect(Ray &ray);
         vec4 BasicSample(vec3& pos, vec3& p, vec3& dx, vec3& dy);
         vec4 SuperSample(vec3& pos, vec3& p, vec3& dx, vec3& dy);

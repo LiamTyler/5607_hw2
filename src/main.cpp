@@ -39,7 +39,8 @@ int main(int argc, char* argv[]) {
 
     string scene_file = "../scenes/bear.scn";
     new Label(control, "Current Loaded Scene", "sans-bold");
-    TextBox* scene_name = new TextBox(control, scene_file);
+    TextBox* scene_name = new TextBox(control, "     " + scene_file); 
+    scene_name->setAlignment(TextBox::Alignment::Right);
     new Label(control, "Scene Selection", "sans-bold");
     Button *open = new Button(control, "Open Scene");
 
@@ -67,11 +68,12 @@ int main(int argc, char* argv[]) {
 
     open->setCallback([&] {
         scene_file = file_dialog({ { "scn", "Scene File" }}, false);
-        string tmp;
-        if (scene_file.length() > 20) {
-            tmp = scene_file.substr(scene_file.length() - 20);
-        }
+        int l = scene_file.length();
+        string tmp = scene_file;
+        if (l > 25)
+            tmp = scene_file.substr(l - 25);
         scene_name->setValue(tmp);
+        screen->performLayout();
         w->setPosition(Vector2i(30 + control->width(), 10));
         screen->setSize(Vector2i(w->position()[0] + w->size()[0] + 10, screen->size()[1]));
     });

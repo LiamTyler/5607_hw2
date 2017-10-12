@@ -20,7 +20,7 @@ RayTracer::RayTracer() {
     parser_ = nullptr;
     camera_ = nullptr;
     background_ = vec4(0,0,0,1);
-    max_depth_ = 1;
+    max_depth_ = 5;
 }
 
 RayTracer::~RayTracer() {
@@ -67,7 +67,7 @@ void RayTracer::Parse(string filename) {
     sampling_method_ = parser_->getSamplingMethod();
 }
 
-vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray) {
+vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
     Material * m = hit_obj->getMaterial();
     vec3 v = normalize(ray.dir);
     vec3 p = ray.Evaluate();
@@ -84,13 +84,15 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray) {
     }
 
     // Compute reflected and refracting lighting
-    vec3 r = reflect(ray.dir, n);
-    Ray mirror(p + 0.001 * r, r);
-    color += m->getSpecular() * vec3(TraceRay(mirror));
+    if (depth < max_depth_) {
+        vec3 r = reflect(ray.dir, n);
+        Ray mirror(p + 0.001 * r, r);
+        color += m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
 
-    r = glm::refract(ray.dir, n, 1.0f / m->getIOR());
-    Ray refracted(p + 0.0001 * r, r);
-    color += m->getTransmissive() * vec3(TraceRay(refracted));
+        r = glm::refract(ray.dir, n, 1.0f / m->getIOR());
+        Ray refracted(p + 0.0001 * r, r);
+        color += m->getTransmissive() * vec3(TraceRay(refracted, depth + 1));
+    }
 
     // clamp
     color.x = std::min(1.0f, std::max(0.f, color.x));
@@ -124,11 +126,11 @@ Shape* RayTracer::Intersect(Ray& ray) {
     return hit_obj;
 }
 
-vec4 RayTracer::TraceRay(Ray& ray) {
+vec4 RayTracer::TraceRay(Ray& ray, int depth) {
     Shape* hit_obj = Intersect(ray);
 
     if (hit_obj) {
-        return ComputeLighting(hit_obj, ray);
+        return ComputeLighting(hit_obj, ray, depth);
     } else {
         return background_;
     }
@@ -170,11 +172,11 @@ void RayTracer::Run(StatusReporter* statusReporter) {
             vec3 p = py + c*dx;
             vec4 color = (this->*Sample)(pos, p, dx, dy);
             image_->SetPixel(r, c, color);
-        }
         if (statusReporter) {
             current_time = high_resolution_clock::now();
             float dt = duration_cast<milliseconds>(current_time - start_time).count();
             statusReporter->Update(r / (float) height, dt / 1000);
+        }
         }
     }
 
@@ -185,13 +187,13 @@ void RayTracer::Run(StatusReporter* statusReporter) {
 vec4 RayTracer::BasicSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
     vec3 dir = normalize(p - pos);
     Ray ray(pos, dir);
-    return TraceRay(ray);
+    return TraceRay(ray, 0);
 }
 
 vec4 RayTracer::SuperSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
     vec3 dir = normalize(p - pos);
     Ray ray(pos, dir);
-    vec4 newColor = TraceRay(ray);
+    vec4 newColor = TraceRay(ray, 0);
     int w = 2;
     int h = 2; 
     vec3 dx2 = (1.0/w)*dx;
@@ -204,7 +206,7 @@ vec4 RayTracer::SuperSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
             p = py2 + c2*dx2;
             dir = normalize(p - pos);
             ray = Ray(pos, dir);
-            newColor += TraceRay(ray);
+            newColor += TraceRay(ray, 0);
         }
     }
     newColor *= (1.0/(w*h+1));
@@ -214,7 +216,7 @@ vec4 RayTracer::SuperSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
 vec4 RayTracer::AdaptiveSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
     vec3 dir = normalize(p - pos);
     Ray ray(pos,dir);
-    vec4 newColor = TraceRay(ray);
+    vec4 newColor = TraceRay(ray, 0);
     vec4 deltaColor(0,0,0,0);
     vec4 prevColor = newColor;
     vec3 dx2 = dx;
@@ -226,7 +228,7 @@ vec4 RayTracer::AdaptiveSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
             vec3 p2 = py2 + c2*dx2;
             dir = normalize(p2 - pos);
             ray = Ray(pos, dir);
-            vec4 tmp = TraceRay(ray);
+            vec4 tmp = TraceRay(ray, 0);
             deltaColor += tmp - prevColor;
             prevColor = tmp;
             newColor += tmp;
@@ -242,7 +244,7 @@ vec4 RayTracer::AdaptiveSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
                 p = py2 + c2*dx2;
                 dir = normalize(p - pos);
                 ray = Ray(pos, dir);
-                vec4 tmp = TraceRay(ray);
+                vec4 tmp = TraceRay(ray, 0);
                 newColor += tmp;
             }
         }

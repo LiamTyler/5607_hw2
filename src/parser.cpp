@@ -21,6 +21,7 @@ void Parser::Init() {
     current_material_ = new Material();
     materials_.push_back(current_material_);
     sampling_method_ = BASIC;
+    max_depth_ = 5;
 }
 
 bool Parser::Parse() {

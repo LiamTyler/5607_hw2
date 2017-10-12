@@ -1,4 +1,5 @@
 sampling_method 2
+max_depth 5
 
 camera 0 0 -100 0 0 1 0 1 0  30 
 #camera 0 300 100   0 -1 1   0 1 1   45
@@ -13,18 +14,18 @@ point_light  12000 12000 12000 -150 200 200
 point_light  12000 12000 12000 150 -100 200
 #point_light  32000 32000 32000 0 200 200
 
-directional_light .7 .7 .7 1 1 1
+#directional_light .7 .7 .7 1 1 1
 spot_light 15000 15000 15000  50 -100 100   0 1 1  10 40 
 point_light 15000 15000 15000  0 -100 100
 
-material 1 1 1  0 0 1  1 1 1  10  0 0 0   0
+material 1 1 1  0 0 1  0 0 0  10  0 0 0   1
 sphere -100 50 300 100 
 
-material 1 1 1  1 0 0  0 0 1  50  0 0 0   0
+material 0 0 0  0 0 0  1 1 1  10  0 0 0   1
 sphere 50 -50 300 100 
 
-material 1 1 1  0 1 0  1 1 1  100  0 0 0   0
+material 1 1 1  0 1 0  0 0 0  100  0 0 0   1
 sphere 100 100 100 70 
 
-material 1 1 1  1 1 0  1 1 1  100  0 0 0   0
+material 1 1 1  1 1 0  0 0 0  100  0 0 0   1
 sphere 200 100 200 110
