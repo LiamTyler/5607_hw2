@@ -53,11 +53,36 @@ bool Parser::Parse() {
             infile_ >> w >> h;
             camera_->setWidth(w);
             camera_->setHeight(h);
+        } else if (command == "max_vertices") {
+            int mv;
+            infile_ >> mv;
+            max_vertices_ = mv;
+        } else if (command == "max_normals") {
+            int mn;
+            infile_ >> mn;
+            max_normals_ = mn;
+        } else if (command == "vertex") {
+            vec3 v;
+            infile_ >> v;
+            vertices_.push_back(v);
+        } else if (command == "normal") {
+            vec3 n;
+            infile_ >> n;
+            normals_.push_back(n);
         } else if (command == "sphere") {
             vec3 p;
             float r;
             infile_ >> p >> r;
             spheres_.push_back(new Sphere(p, r, current_material_));
+        } else if (command == "triangle") {
+            vec3 v;
+            infile_ >> v;
+            triangles_.push_back(new Triangle(current_material_, v.x, v.y, v.z));
+        } else if (command == "normal_triangle") {
+            vec3 v, n;
+            infile_ >> v >> n;
+            normal_triangles_.push_back(
+                    new NormalTriangle(current_material_, v.x, v.y, v.z, n.x, n.y, n.z));
         } else if (command == "background") {
             vec3 c;
             infile_ >> c;

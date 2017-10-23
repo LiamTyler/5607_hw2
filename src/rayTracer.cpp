@@ -61,17 +61,40 @@ void RayTracer::Parse(string filename) {
     for (int i = 0; i < s.size(); i++)
         shapes_.push_back(s[i]);
 
+    vertices_ = parser_->getVertices();
+    normals_ = parser_->getNormals();
+    triangles_ = parser_->getTriangles();
+    normal_triangles_ = parser_->getNormalTriangles();
+
     materials_ = parser_->getMaterials();
     background_ = vec4(parser_->getBackground(), 1);
     max_depth_ = parser_->getMaxDepth();
     sampling_method_ = parser_->getSamplingMethod();
 }
 
+float fresnel(vec3 I, vec3 N, float ior) {
+    float kr;
+    float cosi = max(-1.0f, min(1.0f, dot(I, N)));
+    float etai = 1, etat = ior; 
+    if (cosi > 0) { std::swap(etai, etat); N = -N; }
+    float sint = etai/etat*sqrt(max(0.f, 1 - cosi*cosi));
+    if (sint >= 1) {
+        kr = 1;
+    } else {
+        float cost = sqrt(max(0.f, 1 - sint*sint));
+        cosi = fabs(cosi);
+        float Rs = ((etat*cosi) - (etai*cost)) / ((etat*cosi) + (etai*cost));
+        float Rp = ((etai*cosi) - (etat*cost)) / ((etai*cosi) + (etat*cost));
+        kr = (Rs*Rs + Rp*Rp) / 2;
+    }
+    return kr;
+}
+
 vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
     Material * m = hit_obj->getMaterial();
-    vec3 v = normalize(ray.dir);
+    vec3 I = normalize(ray.dir);
     vec3 p = ray.Evaluate();
-    vec3 n = hit_obj->getNormal(p);
+    vec3 N = hit_obj->getNormal(p);
 
     vec3 color = vec3(0,0,0);
 
@@ -80,24 +103,47 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
 
     // Do phong shading
     for (vector<Light*>::iterator it = lights_.begin(); it != lights_.end(); ++it) {
-        color += (*it)->ComputeLighting(v, p, n, m, fp);
+        color += (*it)->ComputeLighting(I, p, N, m, fp);
     }
 
     // Compute reflected and refracting lighting
+    // NOTE!! Using www.scratchapixel.com's lesson on refraction as reference
     if (depth < max_depth_) {
-        vec3 r = reflect(ray.dir, n);
-        Ray mirror(p + 0.001 * r, r);
-        color += m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
+        vec3 reflectColor(0,0,0), transmissiveColor(0,0,0);
 
-        r = glm::refract(ray.dir, n, 1.0f / m->getIOR());
+        // reflection
+        vec3 r = reflect(I, N);
+        Ray mirror(p + 0.001 * r, r);
+        reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
+        color += reflectColor;
+
+        // refraction
+        /*
+        // float kr = fresnel(I, N, m->getIOR());
+        //  if (kr < 1) {
+        float cosi = max(-1.0f, min(1.0f, dot(I, N)));
+        float etai = 1, etat = m->getIOR();
+        if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); N = -N; }
+        float eta = etai/etat;
+        float k = 1 - eta*eta * (1 - cosi*cosi);
+        if (k < 0)
+            r = vec3(0,0,0);
+        else
+            r = eta * I + (eta * cosi - sqrt(k)) * N;
+
         Ray refracted(p + 0.0001 * r, r);
-        color += m->getTransmissive() * vec3(TraceRay(refracted, depth + 1));
+        transmissiveColor = m->getTransmissive() * vec3(TraceRay(refracted, depth + 1));
+        // }
+
+        // color += reflectColor * kr + transmissiveColor * (1 - kr);
+        color += reflectColor + transmissiveColor;
+        */
     }
 
     // clamp
-    color.x = std::min(1.0f, std::max(0.f, color.x));
-    color.y = std::min(1.0f, std::max(0.f, color.y));
-    color.z = std::min(1.0f, std::max(0.f, color.z));
+    color.x = min(1.0f, max(0.f, color.x));
+    color.y = min(1.0f, max(0.f, color.y));
+    color.z = min(1.0f, max(0.f, color.z));
     return vec4(color, 1);
 }
 
@@ -105,9 +151,24 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
 Shape* RayTracer::Intersect(Ray& ray) {
     Ray closest;
     Shape* hit_obj = nullptr;
-    // Loop over every shape in scene
+    // Loop over every sphere in scene
     for (int i = 0; i < shapes_.size(); i++) {
         if (shapes_[i]->Intersect(ray)) { 
+            if (hit_obj) {
+                // Record if object is the closest so far
+                if (ray.tmin < closest.tmin) {
+                    closest = ray;
+                    hit_obj = shapes_[i];
+                }
+            } else {
+                closest = ray;
+                hit_obj = shapes_[i];
+            }
+        }
+    }
+    // Loop over every normal triangle in scene
+    for (int i = 0; i < normal_triangles_.size(); i++) {
+        if (normal_triangles_[i]->Intersect(ray)) { 
             if (hit_obj) {
                 // Record if object is the closest so far
                 if (ray.tmin < closest.tmin) {
@@ -135,7 +196,6 @@ vec4 RayTracer::TraceRay(Ray& ray, int depth) {
         return background_;
     }
 }
-    high_resolution_clock::time_point end = high_resolution_clock::now();
 
 void RayTracer::Run(StatusReporter* statusReporter) {
     high_resolution_clock::time_point start_time = high_resolution_clock::now();
@@ -172,11 +232,11 @@ void RayTracer::Run(StatusReporter* statusReporter) {
             vec3 p = py + c*dx;
             vec4 color = (this->*Sample)(pos, p, dx, dy);
             image_->SetPixel(r, c, color);
-        if (statusReporter) {
-            current_time = high_resolution_clock::now();
-            float dt = duration_cast<milliseconds>(current_time - start_time).count();
-            statusReporter->Update(r / (float) height, dt / 1000);
-        }
+            if (statusReporter) {
+                current_time = high_resolution_clock::now();
+                float dt = duration_cast<milliseconds>(current_time - start_time).count();
+                statusReporter->Update(r / (float) height, dt / 1000);
+            }
         }
     }
 

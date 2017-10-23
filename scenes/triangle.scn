@@ -1,0 +1,14 @@
+output_image triangle.bmp
+film_resolution 600 600
+background 1 1 1
+
+directional_light .7 .7 .7 0 0 1
+material 1 1 1   0 1 0    0 0 0  1  0 0 0  1.0
+
+vertex -100 0 300
+vertex 100 0 300
+vertex 0 200 300
+
+normal 0 0 -1
+
+normal_triangle   0 1 2  0 0 0

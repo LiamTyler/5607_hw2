@@ -38,6 +38,10 @@ class RayTracer {
         Camera * camera_;
         vector<Light*> lights_;
         vector<Shape*> shapes_;
+        vector<Triangle*> triangles_;
+        vector<NormalTriangle*> normal_triangles_;
+        vector<vec3> vertices_;
+        vector<vec3> normals_;
         
         vector<Material*> materials_;
 
