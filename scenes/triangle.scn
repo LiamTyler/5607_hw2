@@ -9,6 +9,8 @@ vertex -100 0 300
 vertex 100 0 300
 vertex 0 200 300
 
+normal -4 0 -1
+normal 4 0 -1
 normal 0 0 -1
 
-normal_triangle   0 1 2  0 0 0
+normal_triangle   0 1 2  0 1 2

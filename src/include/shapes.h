@@ -7,17 +7,21 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 using glm::vec3;
 using glm::dot;
 using glm::length;
 using glm::cross;
 using std::vector;
+using std::endl;
+using std::cout;
 
 typedef struct {
-    vector<vec3>& verts;
-    vector<vec3>& norms;
-    Ray & ray;
+    vector<vec3>* verts;
+    vector<vec3>* norms;
+    vec3 cameraDir;
+    Ray ray;
     float u, v;
 } Intersection;
 
@@ -25,8 +29,8 @@ class Shape {
     public:
         Shape() : Shape(nullptr) {}
         Shape(Material *m) : material_(m) {}
-        virtual bool Intersect(Ray& ray) { return false; }
-        virtual vec3 getNormal(vec3 p) { return vec3(0,0,0); }
+        virtual bool Intersect(Intersection& inter) = 0;
+        virtual vec3 getNormal(vec3& p, Intersection& inter) = 0;
         void setMaterial(Material *m) { material_ = m; }
         Material* getMaterial() { return material_; }
 
@@ -45,35 +49,24 @@ class Triangle : public Shape {
         int getVertex1() { return v1_; }
         int getVertex2() { return v2_; }
         int getVertex3() { return v3_; }
-        /*
-        virtual vec3 getNormal1(vector<vec3>& vertices) {
-            vec3 v13 = vertices[v3] - 
-            return glm::cross(
-        */
-    protected:
-        int v1_;
-        int v2_;
-        int v3_;
-};
+        virtual vec3 getNormal(vec3& p, Intersection& inter) {
+            vec3 v1 = (*inter.verts)[v1_];
+            vec3 v2 = (*inter.verts)[v2_];
+            vec3 v3 = (*inter.verts)[v3_];
+            vec3 e12 = v2 - v1;
+            vec3 e13 = v3 - v1;
+            vec3 N = normalize(cross(e12, e13));
 
-class NormalTriangle : public Triangle {
-    public:
-        NormalTriangle() : Triangle(), n1_(0), n2_(0), n3_(0) {}
-        NormalTriangle(Material* m, int v1, int v2, int v3, int n1, int n2, int n3) :
-            Triangle(m, v1, v2, v3) {
-            n1_ = n1; n2_ = n2; n3_ = n3;
+            if (dot(inter.cameraDir, N) < 0)
+                return N;
+            else
+                return -N;
         }
-        int getNormal1() { return n1_; }
-        int getNormal2() { return n2_; }
-        int getNormal3() { return n3_; }
-        bool Intersect(vector<vec3>& verts, vector<vec3>& norms, Ray& ray, float& u, float& v) {
+        virtual bool Intersect(Intersection& inter) {
             // get vertices and normals
-            vec3 v1 = verts[v1_];
-            vec3 v2 = verts[v2_];
-            vec3 v3 = verts[v3_];
-            vec3 n1 = norms[n1_];
-            vec3 n2 = norms[n2_];
-            vec3 n3 = norms[n3_];
+            vec3 v1 = (*inter.verts)[v1_];
+            vec3 v2 = (*inter.verts)[v2_];
+            vec3 v3 = (*inter.verts)[v3_];
 
             // get edges and vectors for barycentric coordinates
             vec3 e12 = v2 - v1;
@@ -85,13 +78,13 @@ class NormalTriangle : public Triangle {
             vec3 N = cross(v12, v13);
             
             float d = dot(v1, N);
-            float t = -(dot(ray.p, N) + d) / dot(ray.dir, N);
+            float t = -(dot(inter.ray.p, N) - d) / dot(inter.ray.dir, N);
             // check if triangle is behind the ray's origin
             if (t < 0)
                 return false;
-            ray.tmin = t;
+            inter.ray.tmin = t;
 
-            vec3 P = ray.Evaluate();
+            vec3 P = inter.ray.Evaluate();
             float area = length(N) / 2;
             
             vec3 vp;
@@ -108,14 +101,45 @@ class NormalTriangle : public Triangle {
             vpCross = cross(e23, vp);
             if (dot(vpCross, N) < 0)
                 return false;
+            inter.u = (length(vpCross) / 2) / area;
 
             // v3 to v1
             vp = P - v3;
             vpCross = cross(e31, vp);
             if (dot(vpCross, N) < 0)
                 return false;
+            inter.v = (length(vpCross) / 2) / area;
 
             return true;
+        }
+
+    protected:
+        int v1_;
+        int v2_;
+        int v3_;
+};
+
+class NormalTriangle : public Triangle {
+    public:
+        NormalTriangle() : Triangle(), n1_(0), n2_(0), n3_(0) {}
+        NormalTriangle(Material* m, int v1, int v2, int v3, int n1, int n2, int n3) :
+            Triangle(m, v1, v2, v3) {
+            n1_ = n1; n2_ = n2; n3_ = n3;
+        }
+        int getNormal1() { return n1_; }
+        int getNormal2() { return n2_; }
+        int getNormal3() { return n3_; }
+        virtual vec3 getNormal(vec3& p, Intersection& inter) {
+            vec3 v1 = (*inter.verts)[v1_];
+            vec3 v2 = (*inter.verts)[v2_];
+            vec3 v3 = (*inter.verts)[v3_];
+            vec3 n1 = (*inter.norms)[n1_];
+            vec3 n2 = (*inter.norms)[n2_];
+            vec3 n3 = (*inter.norms)[n3_];
+            float u = inter.u, v = inter.v;
+
+            return normalize(n1 * u + n2 * v + n3 * (1 - u - v));
+            // return normalize(n1 (1- u - v) + n2 * u + n3 * v);
         }
 
     protected:
@@ -133,10 +157,10 @@ class Sphere : public Shape {
             radius_ = r;
         }
 
-        bool Intersect(Ray& ray) {
+        bool Intersect(Intersection& inter) {
             float t0 = -1, t1 = -1;
-            vec3 OC = ray.p - position_;
-            float b = 2*glm::dot(ray.dir, OC);
+            vec3 OC = inter.ray.p - position_;
+            float b = 2*glm::dot(inter.ray.dir, OC);
             float c = glm::dot(OC,OC) - radius_*radius_;
             float disc = b*b - 4*c;
             if (disc < 0) {
@@ -154,12 +178,12 @@ class Sphere : public Shape {
                 if (t0 < 0)
                     return false;
             }
-            ray.tmin = std::min(t0, t1);
-            ray.tmax = std::max(t0, t1);
+            inter.ray.tmin = std::min(t0, t1);
+            inter.ray.tmax = std::max(t0, t1);
             return true;
         }
 
-        vec3 getNormal(vec3 pos) {
+        virtual vec3 getNormal(vec3& pos, Intersection& inter) {
             return glm::normalize(pos - position_);
         }
 

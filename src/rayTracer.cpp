@@ -43,6 +43,7 @@ void RayTracer::Parse(string filename) {
     parser_->Parse();
     camera_ = parser_->getCamera();
 
+    // Lights
     lights_.push_back(parser_->getAmbientLight());
 
     vector<DirectionalLight*> dl = parser_->getDirectionalLights();
@@ -57,14 +58,21 @@ void RayTracer::Parse(string filename) {
     for (int i = 0; i < sl.size(); i++)
         lights_.push_back(sl[i]);
 
+    // Shapes
+    vertices_ = parser_->getVertices();
+    normals_ = parser_->getNormals();
     vector<Sphere*> s = parser_->getSpheres();
     for (int i = 0; i < s.size(); i++)
         shapes_.push_back(s[i]);
+    vector<Triangle*> t = parser_->getTriangles();
+    for (int i = 0; i < t.size(); i++)
+        shapes_.push_back(t[i]);
+    vector<NormalTriangle*> nt = parser_->getNormalTriangles();
+    for (int i = 0; i < nt.size(); i++)
+        shapes_.push_back(nt[i]);
 
-    vertices_ = parser_->getVertices();
-    normals_ = parser_->getNormals();
-    triangles_ = parser_->getTriangles();
-    normal_triangles_ = parser_->getNormalTriangles();
+    // triangles_ = parser_->getTriangles();
+    // normal_triangles_ = parser_->getNormalTriangles();
 
     materials_ = parser_->getMaterials();
     background_ = vec4(parser_->getBackground(), 1);
@@ -72,29 +80,11 @@ void RayTracer::Parse(string filename) {
     sampling_method_ = parser_->getSamplingMethod();
 }
 
-float fresnel(vec3 I, vec3 N, float ior) {
-    float kr;
-    float cosi = max(-1.0f, min(1.0f, dot(I, N)));
-    float etai = 1, etat = ior; 
-    if (cosi > 0) { std::swap(etai, etat); N = -N; }
-    float sint = etai/etat*sqrt(max(0.f, 1 - cosi*cosi));
-    if (sint >= 1) {
-        kr = 1;
-    } else {
-        float cost = sqrt(max(0.f, 1 - sint*sint));
-        cosi = fabs(cosi);
-        float Rs = ((etat*cosi) - (etai*cost)) / ((etat*cosi) + (etai*cost));
-        float Rp = ((etai*cosi) - (etat*cost)) / ((etai*cosi) + (etat*cost));
-        kr = (Rs*Rs + Rp*Rp) / 2;
-    }
-    return kr;
-}
-
-vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
+vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) {
     Material * m = hit_obj->getMaterial();
-    vec3 I = normalize(ray.dir);
-    vec3 p = ray.Evaluate();
-    vec3 N = hit_obj->getNormal(p);
+    vec3 I = normalize(inter.ray.dir);
+    vec3 p = inter.ray.Evaluate();
+    vec3 N = normalize(hit_obj->getNormal(p, inter));
 
     vec3 color = vec3(0,0,0);
 
@@ -103,7 +93,7 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
 
     // Do phong shading
     for (vector<Light*>::iterator it = lights_.begin(); it != lights_.end(); ++it) {
-        color += (*it)->ComputeLighting(I, p, N, m, fp);
+        color += (*it)->ComputeLighting(I, p, N, m, inter, fp);
     }
 
     // Compute reflected and refracting lighting
@@ -113,31 +103,9 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
 
         // reflection
         vec3 r = reflect(I, N);
-        Ray mirror(p + 0.001 * r, r);
+        Ray mirror(p + 0.01 * r, r);
         reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
         color += reflectColor;
-
-        // refraction
-        /*
-        // float kr = fresnel(I, N, m->getIOR());
-        //  if (kr < 1) {
-        float cosi = max(-1.0f, min(1.0f, dot(I, N)));
-        float etai = 1, etat = m->getIOR();
-        if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); N = -N; }
-        float eta = etai/etat;
-        float k = 1 - eta*eta * (1 - cosi*cosi);
-        if (k < 0)
-            r = vec3(0,0,0);
-        else
-            r = eta * I + (eta * cosi - sqrt(k)) * N;
-
-        Ray refracted(p + 0.0001 * r, r);
-        transmissiveColor = m->getTransmissive() * vec3(TraceRay(refracted, depth + 1));
-        // }
-
-        // color += reflectColor * kr + transmissiveColor * (1 - kr);
-        color += reflectColor + transmissiveColor;
-        */
     }
 
     // clamp
@@ -148,50 +116,41 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
 }
 
 
-Shape* RayTracer::Intersect(Ray& ray) {
-    Ray closest;
+Shape* RayTracer::Intersect(Intersection& inter) {
+    Intersection closest;
     Shape* hit_obj = nullptr;
     // Loop over every sphere in scene
     for (int i = 0; i < shapes_.size(); i++) {
-        if (shapes_[i]->Intersect(ray)) { 
+        if (shapes_[i]->Intersect(inter)) { 
             if (hit_obj) {
                 // Record if object is the closest so far
-                if (ray.tmin < closest.tmin) {
-                    closest = ray;
+                if (inter.ray.tmin < closest.ray.tmin) {
+                    closest = inter;
                     hit_obj = shapes_[i];
                 }
             } else {
-                closest = ray;
-                hit_obj = shapes_[i];
-            }
-        }
-    }
-    // Loop over every normal triangle in scene
-    for (int i = 0; i < normal_triangles_.size(); i++) {
-        if (normal_triangles_[i]->Intersect(ray)) { 
-            if (hit_obj) {
-                // Record if object is the closest so far
-                if (ray.tmin < closest.tmin) {
-                    closest = ray;
-                    hit_obj = shapes_[i];
-                }
-            } else {
-                closest = ray;
+                closest = inter;
                 hit_obj = shapes_[i];
             }
         }
     }
     if (hit_obj) {
-        ray = closest;
+        inter = closest;
     }
     return hit_obj;
 }
 
 vec4 RayTracer::TraceRay(Ray& ray, int depth) {
-    Shape* hit_obj = Intersect(ray);
+    Intersection inter;
+    inter.ray = ray;
+    inter.verts = &vertices_;
+    inter.norms = &normals_;
+    inter.cameraDir = normalize(camera_->getDir());
+
+    Shape* hit_obj = Intersect(inter);
 
     if (hit_obj) {
-        return ComputeLighting(hit_obj, ray, depth);
+        return ComputeLighting(hit_obj, inter, depth);
     } else {
         return background_;
     }
