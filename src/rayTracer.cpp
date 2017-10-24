@@ -79,11 +79,12 @@ void RayTracer::Parse(string filename) {
     max_depth_ = parser_->getMaxDepth();
     sampling_method_ = parser_->getSamplingMethod();
 
-    // if (parser_->getEnvironmentMap() != "") {
-    //     env_map_ = new Image(parser_->getEnvironmentMap().c_str());
-    // } else {
-    //     env_map_ = nullptr;
-    // }
+    if (parser_->getEnvironmentMap() != "") {
+        env_map_ = new Image(parser_->getEnvironmentMap());
+    } else {
+        env_map_ = nullptr;
+    }
+    cout << "Made it past loading envmap" << endl;
 }
 
 vec3 refract(vec3& I, vec3& N, float& ior) {
@@ -223,7 +224,17 @@ vec4 RayTracer::TraceRay(Ray& ray, int depth) {
         //}
         return ComputeLighting(hit_obj, inter, depth);
     } else {
-        return background_;
+        if (env_map_) {
+            vec3 d = ray.dir;
+            float lat = asin(d.y), lon = atan2(d.x,d.z);
+            float u = lon/(2*M_PI) + 0.5, v = lat/M_PI + 0.5;
+            // return texture(skyTexture, vec2(u, v)).rgb;
+            int c = u * env_map_->Width();
+            int r = (1-v) * env_map_->Height();
+            return env_map_->GetPixel(r,c);
+        } else {
+            return background_;
+        }
     }
 }
 

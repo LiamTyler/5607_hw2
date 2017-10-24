@@ -1,12 +1,13 @@
-// #define STB_IMAGE_IMPLEMENTATION
-// #include "include/stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "include/stb_image.h"
 #include "include/image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "include/stb_image_write.h"
 
+using namespace std;
+
 Image::Image() : Image(640, 480) {}
 
-/*
 Image::Image(std::string fname) {
     int nC;
     unsigned char *raw = stbi_load(fname.c_str(), &width_, &height_, &nC, 4);
@@ -14,19 +15,18 @@ Image::Image(std::string fname) {
         std::cout << "Failed to load in the environment map: " << fname << std::endl;
     } else {
         pixels_ = new vec4[width_*height_];
-        int b = 0;
+        int I = 0;
         for (int r = 0; r < height_; r++) {
             for (int c = 0; c < width_; c++) {
-                float r = raw[(int)b++];
-                float g = raw[(int)b++];
-                float b = raw[(int)b++];
-                float a = raw[(int)b++];
-                SetPixel(r, c, vec4(r,g,b,a) / 255.0f);
+                float rr = raw[I++] / 255.0f;
+                float gg = raw[I++] / 255.0f;
+                float bb = raw[I++] / 255.0f;
+                float aa = raw[I++] / 255.0f;
+                SetPixel(r, c, vec4(rr,gg,bb,aa));
             }
         }
     }
 }
-*/
 
 Image::Image(int w, int h) {
     width_ = w;

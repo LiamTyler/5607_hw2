@@ -2,7 +2,7 @@
 #define SRC_INCLUDE_CANVAS_H_
 
 #include "include/utils.h"
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include "include/stb_image.h"
 
 using namespace std;
