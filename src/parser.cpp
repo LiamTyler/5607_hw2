@@ -120,6 +120,8 @@ bool Parser::Parse() {
             int sm;
             infile_ >> sm;
             sampling_method_ = (SamplingMethod) sm;
+        } else if (command == "environment_map"){
+            infile_ >> env_map_;
         } else {
             getline(infile_, line);
             cout << "WARNING. Do not know command: " << command << endl;

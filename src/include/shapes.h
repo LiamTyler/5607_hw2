@@ -169,17 +169,16 @@ class Sphere : public Shape {
             t0 = (-b + std::sqrt(disc)) / (2.0);
             t1 = (-b - std::sqrt(disc)) / (2.0);
             if (t0 > t1) {
-                float tmp = t0;
-                t0 = t1;
-                t1 = t0;
+                std::swap(t0, t1);
             }
-            if (t0 < 0) {
-                t0 = t1;
-                if (t0 < 0)
-                    return false;
+            if (t1 < 0) {
+                return false;
             }
-            inter.ray.tmin = std::min(t0, t1);
-            inter.ray.tmax = std::max(t0, t1);
+            inter.ray.tmin = t0;
+            inter.ray.tmax = t1;
+            if (t0 < 0)
+                inter.ray.tmin = t1;
+
             return true;
         }
 

@@ -78,6 +78,12 @@ void RayTracer::Parse(string filename) {
     background_ = vec4(parser_->getBackground(), 1);
     max_depth_ = parser_->getMaxDepth();
     sampling_method_ = parser_->getSamplingMethod();
+
+    // if (parser_->getEnvironmentMap() != "") {
+    //     env_map_ = new Image(parser_->getEnvironmentMap().c_str());
+    // } else {
+    //     env_map_ = nullptr;
+    // }
 }
 
 vec3 refract(vec3& I, vec3& N, float& ior) {
@@ -89,10 +95,30 @@ vec3 refract(vec3& I, vec3& N, float& ior) {
     float k = 1 - eta * eta * (1 - cosi * cosi); 
     return k < 0 ? vec3(0,0,0) : eta * I + (eta * cosi - sqrt(k)) * n;
 }
+/*
+void fresnel(const vec3 &I, const vec3 &N, const float &ior, float &kr) 
+{ 
+    float cosi = max(-1.0f, min(1.0f, dot(I, N))); 
+    float etai = 1, etat = ior; 
+    if (cosi > 0) { std::swap(etai, etat); } 
+    float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi)); 
+    // Total internal reflection
+    if (sint >= 1) { 
+        kr = 1; 
+    } 
+    else { 
+        float cost = sqrtf(std::max(0.f, 1 - sint * sint)); 
+        cosi = fabsf(cosi); 
+        float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost)); 
+        float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)); 
+        kr = (Rs * Rs + Rp * Rp) / 2; 
+    } 
+}
+*/
 
 vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) {
     Material * m = hit_obj->getMaterial();
-    vec3 I = normalize(inter.ray.dir);
+    vec3 I = inter.ray.dir;
     vec3 p = inter.ray.Evaluate();
     vec3 N = normalize(hit_obj->getNormal(p, inter));
 
@@ -108,30 +134,40 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
 
     // Compute reflected and refracting lighting
     // NOTE!! Using www.scratchapixel.com's lesson on refraction as reference
+    // cout << depth << " " << max_depth_ << endl;
     if (depth < max_depth_) {
         vec3 reflectColor(0,0,0), transmissiveColor(0,0,0);
 
         // reflection
-        vec3 r = reflect(I, N);
-        Ray mirror(p + 0.01 * r, r);
+        float n1 = 1.0, n2 = m->getIOR();
+        float c = dot(N, I);
+        if (c > 0) { 
+            N = -N;
+            swap(n1, n2);
+        }
+        vec3 r = normalize(reflect(I, N));
+        Ray mirror(p + 0.001 * r, r);
         reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
 
         // refraction
-        // r = refract(I, N, m->getIOR());
-        float ratio;
-        if (dot(N, I) > 0) { 
-            N = -N;
-            ratio = m->getIOR();
-        } else {
-            ratio = 1.0 / m->getIOR();
+
+
+        float ratio = n1 / n2;
+        r = normalize(glm::refract(I, N, ratio));
+        // r = normalize(refract(I, N, m->getIOR()));
+        if (m->getTransmissive() != vec3(0,0,0)) {
+            // cout << "ray dir: " << I << endl;
+            // cout << "normal: " << N << endl;
+            // cout << "dot product: " << c << endl;
+            // cout << "refracted: " << r << endl;
+            // cout << "depth: " << depth << " " << max_depth_ << endl;
+            // cout << endl;
         }
-        r = glm::refract(I, N, ratio);
-        Ray transmissive(p + 0.01 * r, r);
+        Ray transmissive(p + 0.001 * r, r);
         transmissiveColor = m->getTransmissive() * vec3(TraceRay(transmissive, depth + 1));
 
-
-        color += reflectColor;
-        color += transmissiveColor;
+        // color += reflectColor * kr + transmissiveColor * (1 - kr);
+        color += reflectColor + transmissiveColor;
     }
 
     // clamp
@@ -141,6 +177,10 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
     return vec4(color, 1);
 }
 
+//float R0 = (n1 - n2) / (n1 + n2);
+//R0 *= R0;
+//kr = R0 + (1-R0)*pow(1-c, 5);
+//if (kr < 1) {
 
 Shape* RayTracer::Intersect(Intersection& inter) {
     Intersection closest;
@@ -176,6 +216,11 @@ vec4 RayTracer::TraceRay(Ray& ray, int depth) {
     Shape* hit_obj = Intersect(inter);
 
     if (hit_obj) {
+        //if (depth > 0) {
+        //    string s;
+        //    cin >> s;
+        //    cout << "refracted hit something" << endl;
+        //}
         return ComputeLighting(hit_obj, inter, depth);
     } else {
         return background_;
@@ -211,6 +256,7 @@ void RayTracer::Run(StatusReporter* statusReporter) {
         Sample = &RayTracer::AdaptiveSample;
 
     // Loop through each pixel
+    #pragma omp parallel for schedule(dynamic) 
     for (int r = 0; r < height; r++) {
         vec3 py = ul + r * dy;
         for (int c = 0; c < width; c++) {

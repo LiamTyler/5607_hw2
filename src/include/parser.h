@@ -53,6 +53,7 @@ class Parser {
 
         vector<Material*> getMaterials() { return materials_; }
         SamplingMethod getSamplingMethod() { return sampling_method_; }
+        string getEnvironmentMap() { return env_map_; }
 
     private:
         string filename_;
@@ -77,6 +78,7 @@ class Parser {
         SamplingMethod sampling_method_;
         vec3 background_;
         int max_depth_;
+        string env_map_;
 };
 
 #endif  // SRC_INCLUDE_PARSER_H_

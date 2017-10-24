@@ -4,10 +4,12 @@ output_image spheres1.bmp
 
 #"ground" sphere
 material .75 .75 .75 .75 .75 .75 .3 .3 .3 32 .2 .2 .2 1.5
+#material .75 .75 .75 .75 .75 .75 .3 .3 .3 32 0 0 0  1.0
 sphere 0 -50 0 50
 
 #red shpere
 material 1 0 0 1 0 0 .3 .3 .3 32 .2 .2 .2 1.5
+#material 1 0 0 1 0 0 .3 .3 .3 32 0 0 0 1.0
 sphere -3 1 0 .75
 
 #green shpere

@@ -33,6 +33,7 @@ class RayTracer {
 
     private:
         Image* image_;
+        Image* env_map_;
         Parser* parser_;
 
         Camera * camera_;

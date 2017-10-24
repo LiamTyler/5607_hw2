@@ -4,6 +4,7 @@
 class Image {
     public:
         Image();
+        // Image(std::string);
         Image(int w, int h);
 
         ~Image();
