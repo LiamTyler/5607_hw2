@@ -1,1 +1,0 @@
-/usr/bin/c++   -fvisibility=hidden  -std=c++14 -fopenmp -Wall -Wextra -std=c++14 -flto -fno-fat-lto-objects -O3 -DNDEBUG   -flto CMakeFiles/example4.dir/src/example4.cpp.o  -o example4 -Wl,-rpath,/home/liam/Documents/School/5607/hw2/build/ext/nanogui -rdynamic libnanogui.so -lGL -lXxf86vm -lXrandr -lXinerama -lXcursor -lXi -lX11 -lpthread -lrt -ldl 

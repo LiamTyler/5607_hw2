@@ -80,6 +80,16 @@ void RayTracer::Parse(string filename) {
     sampling_method_ = parser_->getSamplingMethod();
 }
 
+vec3 refract(vec3& I, vec3& N, float& ior) {
+    float cosi = max(-1.0f, min(1.0f, dot(I, N))); 
+    float etai = 1, etat = ior; 
+    vec3 n = N; 
+    if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; } 
+    float eta = etai / etat; 
+    float k = 1 - eta * eta * (1 - cosi * cosi); 
+    return k < 0 ? vec3(0,0,0) : eta * I + (eta * cosi - sqrt(k)) * n;
+}
+
 vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) {
     Material * m = hit_obj->getMaterial();
     vec3 I = normalize(inter.ray.dir);
@@ -105,7 +115,23 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
         vec3 r = reflect(I, N);
         Ray mirror(p + 0.01 * r, r);
         reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
+
+        // refraction
+        // r = refract(I, N, m->getIOR());
+        float ratio;
+        if (dot(N, I) > 0) { 
+            N = -N;
+            ratio = m->getIOR();
+        } else {
+            ratio = 1.0 / m->getIOR();
+        }
+        r = glm::refract(I, N, ratio);
+        Ray transmissive(p + 0.01 * r, r);
+        transmissiveColor = m->getTransmissive() * vec3(TraceRay(transmissive, depth + 1));
+
+
         color += reflectColor;
+        color += transmissiveColor;
     }
 
     // clamp
