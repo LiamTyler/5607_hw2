@@ -37,7 +37,8 @@ int main(int argc, char* argv[]) {
     control->setPosition(Vector2i(10, 10));
     control->setLayout(new GroupLayout());
 
-    string scene_file = "../scenes/SphereExamples/spheres1.scn";
+    // string scene_file = "../scenes/SphereExamples/spheres1.scn";
+    string scene_file = "../scenes/Test-Scenes/arm-top.scn";
     new Label(control, "Current Loaded Scene", "sans-bold");
     TextBox* scene_name = new TextBox(control, "     " + scene_file); 
     scene_name->setAlignment(TextBox::Alignment::Right);

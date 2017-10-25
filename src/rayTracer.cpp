@@ -16,6 +16,8 @@ using namespace std;
 using namespace std::chrono;
 using namespace std::placeholders;
 
+#define USE_BVH 1
+
 RayTracer::RayTracer() {
     parser_ = nullptr;
     camera_ = nullptr;
@@ -75,9 +77,6 @@ void RayTracer::Parse(string filename) {
         shapes_[i]->CalculateBB(vertices_);
     }
 
-    // triangles_ = parser_->getTriangles();
-    // normal_triangles_ = parser_->getNormalTriangles();
-
     materials_ = parser_->getMaterials();
     background_ = vec4(parser_->getBackground(), 1);
     max_depth_ = parser_->getMaxDepth();
@@ -89,8 +88,11 @@ void RayTracer::Parse(string filename) {
         env_map_ = nullptr;
     }
 
+#if USE_BVH == 1
     bvh_ = new BVH;
     bvh_->Partition(shapes_);
+    // bvh_->PrintTree(0, 2);
+#endif
 }
 
 vec3 refract(vec3& I, vec3& N, float& ior) {
@@ -102,26 +104,6 @@ vec3 refract(vec3& I, vec3& N, float& ior) {
     float k = 1 - eta * eta * (1 - cosi * cosi); 
     return k < 0 ? vec3(0,0,0) : eta * I + (eta * cosi - sqrt(k)) * n;
 }
-/*
-void fresnel(const vec3 &I, const vec3 &N, const float &ior, float &kr) 
-{ 
-    float cosi = max(-1.0f, min(1.0f, dot(I, N))); 
-    float etai = 1, etat = ior; 
-    if (cosi > 0) { std::swap(etai, etat); } 
-    float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi)); 
-    // Total internal reflection
-    if (sint >= 1) { 
-        kr = 1; 
-    } 
-    else { 
-        float cost = sqrtf(std::max(0.f, 1 - sint * sint)); 
-        cosi = fabsf(cosi); 
-        float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost)); 
-        float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)); 
-        kr = (Rs * Rs + Rp * Rp) / 2; 
-    } 
-}
-*/
 
 vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) {
     Material * m = hit_obj->getMaterial();
@@ -132,7 +114,11 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
     vec3 color = vec3(0,0,0);
 
     // Pass in intersect function to lighting functions
+#if USE_BVH == 1
+    auto fp = std::bind(&RayTracer::Intersect2, this, _1);
+#else
     auto fp = std::bind(&RayTracer::Intersect, this, _1);
+#endif
 
     // Do phong shading
     for (vector<Light*>::iterator it = lights_.begin(); it != lights_.end(); ++it) {
@@ -141,37 +127,31 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
 
     // Compute reflected and refracting lighting
     // NOTE!! Using www.scratchapixel.com's lesson on refraction as reference
-    // cout << depth << " " << max_depth_ << endl;
     if (depth < max_depth_) {
         vec3 reflectColor(0,0,0), transmissiveColor(0,0,0);
 
-        // reflection
         float n1 = 1.0, n2 = m->getIOR();
         float c = dot(N, I);
         if (c > 0) { 
             N = -N;
             swap(n1, n2);
         }
-        vec3 r = normalize(reflect(I, N));
-        Ray mirror(p + 0.001 * r, r);
-        reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
+        vec3 r;
+
+        // reflection
+        if (m->getSpecular() != vec3(0,0,0)) {
+            r = normalize(reflect(I, N));
+            Ray mirror(p + 0.001 * r, r);
+            reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
+        }
 
         // refraction
-
-
-        float ratio = n1 / n2;
-        r = normalize(glm::refract(I, N, ratio));
-        // r = normalize(refract(I, N, m->getIOR()));
         if (m->getTransmissive() != vec3(0,0,0)) {
-            // cout << "ray dir: " << I << endl;
-            // cout << "normal: " << N << endl;
-            // cout << "dot product: " << c << endl;
-            // cout << "refracted: " << r << endl;
-            // cout << "depth: " << depth << " " << max_depth_ << endl;
-            // cout << endl;
+            float ratio = n1 / n2;
+            r = normalize(glm::refract(I, N, ratio));
+            Ray transmissive(p + 0.001 * r, r);
+            transmissiveColor = m->getTransmissive() * vec3(TraceRay(transmissive, depth + 1));
         }
-        Ray transmissive(p + 0.001 * r, r);
-        transmissiveColor = m->getTransmissive() * vec3(TraceRay(transmissive, depth + 1));
 
         // color += reflectColor * kr + transmissiveColor * (1 - kr);
         color += reflectColor + transmissiveColor;
@@ -188,6 +168,11 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
 //R0 *= R0;
 //kr = R0 + (1-R0)*pow(1-c, 5);
 //if (kr < 1) {
+//
+
+Shape* RayTracer::Intersect2(Intersection& inter) {
+    return bvh_->Intersect(inter);
+}
 
 Shape* RayTracer::Intersect(Intersection& inter) {
     Intersection closest;
@@ -220,14 +205,15 @@ vec4 RayTracer::TraceRay(Ray& ray, int depth) {
     inter.norms = &normals_;
     inter.cameraDir = normalize(camera_->getDir());
 
+    // Shape* hit_obj = Intersect(inter);
+#if USE_BVH == 1
+    Shape* hit_obj = Intersect2(inter);
+#else
     Shape* hit_obj = Intersect(inter);
+#endif
 
     if (hit_obj) {
-        //if (depth > 0) {
-        //    string s;
-        //    cin >> s;
-        //    cout << "refracted hit something" << endl;
-        //}
+        // cout << "hit obj!" << endl;
         return ComputeLighting(hit_obj, inter, depth);
     } else {
         if (env_map_) {

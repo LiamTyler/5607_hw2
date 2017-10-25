@@ -12,6 +12,11 @@ class BVH {
         void Partition(const std::vector<Shape*>& shapes);
         Shape* Intersect(Intersection& inter);
         bool RayHitsBB(Ray& ray);
+        BVH* getLeft() { return left_; }
+        BVH* getRight() { return right_; }
+        int getNumShapes() { return shapes_.size(); }
+        void getBB(vec3& mi, vec3& ma) { mi = min_; ma = max_; }
+        void PrintTree(int curr_depth, int max_depth);
 
     private:
         BVH* left_;

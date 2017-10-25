@@ -1,8 +1,9 @@
 #Sci-fi glowing gear
 #Model by Moses Adeagbo
 
+sampling_method 1
 #Camera Set-up
-camera 2.8 9 5 -.26 -.78 -.45 0 1 0 20
+camera 2.8 9 5 -.26 -.78 -.45 0 1 0 15
 output_image gear.bmp
 #film_resolution 300 300
 film_resolution 800 600
