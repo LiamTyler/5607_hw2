@@ -71,6 +71,10 @@ void RayTracer::Parse(string filename) {
     for (int i = 0; i < nt.size(); i++)
         shapes_.push_back(nt[i]);
 
+    for (int i = 0; i < shapes_.size(); ++i) {
+        shapes_[i]->CalculateBB(vertices_);
+    }
+
     // triangles_ = parser_->getTriangles();
     // normal_triangles_ = parser_->getNormalTriangles();
 
@@ -84,7 +88,9 @@ void RayTracer::Parse(string filename) {
     } else {
         env_map_ = nullptr;
     }
-    cout << "Made it past loading envmap" << endl;
+
+    bvh_ = new BVH;
+    bvh_->Partition(shapes_);
 }
 
 vec3 refract(vec3& I, vec3& N, float& ior) {

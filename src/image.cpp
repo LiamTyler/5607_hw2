@@ -4,8 +4,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "include/stb_image_write.h"
 
-using namespace std;
-
 Image::Image() : Image(640, 480) {}
 
 Image::Image(std::string fname) {

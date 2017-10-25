@@ -16,6 +16,8 @@ using glm::cross;
 using std::vector;
 using std::endl;
 using std::cout;
+using std::max;
+using std::min;
 
 typedef struct {
     vector<vec3>* verts;
@@ -31,11 +33,20 @@ class Shape {
         Shape(Material *m) : material_(m) {}
         virtual bool Intersect(Intersection& inter) = 0;
         virtual vec3 getNormal(vec3& p, Intersection& inter) = 0;
+        virtual void CalculateBB(const vector<vec3>& verts) = 0;
+        virtual void GetBB(vec3& min, vec3& max) {
+            min = min_;
+            max = max_;
+        }
+        vec3 getCenter() { return center_; }
         void setMaterial(Material *m) { material_ = m; }
         Material* getMaterial() { return material_; }
 
     protected:
         Material * material_;
+        vec3 min_;
+        vec3 max_;
+        vec3 center_;
 };
 
 class Triangle : public Shape {
@@ -49,6 +60,28 @@ class Triangle : public Shape {
         int getVertex1() { return v1_; }
         int getVertex2() { return v2_; }
         int getVertex3() { return v3_; }
+        
+        virtual void CalculateBB(const vector<vec3>& verts) {
+            vec3 v1 = verts[v1_];
+            vec3 v2 = verts[v2_];
+            vec3 v3 = verts[v3_];
+            float minX, maxX, minY, maxY, minZ, maxZ;
+            minX = min({v1.x, v2.x, v3.x});
+            minY = min({v1.y, v2.y, v3.y});
+            minZ = min({v1.z, v2.z, v3.z});
+            maxX = max({v1.x, v2.x, v3.x});
+            maxY = max({v1.y, v2.y, v3.y});
+            maxZ = max({v1.z, v2.z, v3.z});
+            min_ = vec3(minX, minY, minZ);
+            max_ = vec3(maxX, maxY, maxZ);
+
+            vec3 mid = .5 * (v2 + v3);
+            float mx = v1.x + 2.0/3.0*(mid.x - v1.x);
+            float my = v1.y + 2.0/3.0*(mid.y - v1.y);
+            float mz = v1.z + 2.0/3.0*(mid.z - v1.z);
+            center_ = vec3(mx, my, mz);
+        }
+
         virtual vec3 getNormal(vec3& p, Intersection& inter) {
             vec3 v1 = (*inter.verts)[v1_];
             vec3 v2 = (*inter.verts)[v2_];
@@ -155,6 +188,14 @@ class Sphere : public Shape {
         Sphere(vec3 pos, float r, Material* m)  : Shape(m) {
             position_ = pos;
             radius_ = r;
+        }
+
+        virtual void CalculateBB(const vector<vec3>& verts) {
+            vec3 p = position_;
+            float r = radius_;
+            min_ = vec3(p.x - r, p.y - r, p.z - r);
+            max_ = vec3(p.x + r, p.y + r, p.z + r);
+            center_ = position_;
         }
 
         bool Intersect(Intersection& inter) {

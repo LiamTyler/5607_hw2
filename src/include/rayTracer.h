@@ -11,6 +11,7 @@
 #include "include/parser.h"
 #include "include/image.h"
 #include "include/statusReporter.h"
+#include "include/bvh.h"
 
 using std::string;
 using glm::vec3;
@@ -45,6 +46,8 @@ class RayTracer {
         vector<vec3> normals_;
         
         vector<Material*> materials_;
+
+        BVH* bvh_;
 
         vec4 background_;
         int max_depth_;
