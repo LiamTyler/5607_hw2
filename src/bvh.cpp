@@ -69,7 +69,8 @@ Shape* BVH::Intersect(Intersection& inter) {
     }
 }
 
-// Intersection code 
+// Intersection code. NOTE!!! Used scratchapixel as a reference for
+// this intersection code / math since I kept screwing it up on my own
 bool BVH::RayHitsBB(Ray& ray) {
     vec3 p = ray.p;
     vec3 d = ray.dir;
@@ -94,10 +95,10 @@ bool BVH::RayHitsBB(Ray& ray) {
     if ((tmin > tzmax) || (tzmin > tmax))
         return false;
 
-    tmin = max(tzmin, tmin);
-    tmax = min(tzmax, tmax);
-    ray.tmin = tmin;
-    ray.tmax = tmax;
+    // tmin = max(tzmin, tmin);
+    // tmax = min(tzmax, tmax);
+    // ray.tmin = tmin;
+    // ray.tmax = tmax;
     return true;
 }
 

@@ -73,24 +73,6 @@ void RayTracer::Parse(string filename) {
     sampling_method_ = parser_->getSamplingMethod();
 }
 
-float fresnel(vec3 I, vec3 N, float ior) {
-    float kr;
-    float cosi = max(-1.0f, min(1.0f, dot(I, N)));
-    float etai = 1, etat = ior; 
-    if (cosi > 0) { std::swap(etai, etat); N = -N; }
-    float sint = etai/etat*sqrt(max(0.f, 1 - cosi*cosi));
-    if (sint >= 1) {
-        kr = 1;
-    } else {
-        float cost = sqrt(max(0.f, 1 - sint*sint));
-        cosi = fabs(cosi);
-        float Rs = ((etat*cosi) - (etai*cost)) / ((etat*cosi) + (etai*cost));
-        float Rp = ((etai*cosi) - (etat*cost)) / ((etai*cosi) + (etat*cost));
-        kr = (Rs*Rs + Rp*Rp) / 2;
-    }
-    return kr;
-}
-
 vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
     Material * m = hit_obj->getMaterial();
     vec3 I = normalize(ray.dir);
@@ -108,7 +90,6 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
     }
 
     // Compute reflected and refracting lighting
-    // NOTE!! Using www.scratchapixel.com's lesson on refraction as reference
     if (depth < max_depth_) {
         vec3 reflectColor(0,0,0), transmissiveColor(0,0,0);
 
@@ -133,29 +114,6 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Ray& ray, int depth) {
         }
 
         color += reflectColor * kr + transmissiveColor * (1 - kr);
-        // color += reflectColor + transmissiveColor;
-        /*
-        float ret
-        float n1 = 1, n2 = m->getIOR();
-        float d = dot(I, N);
-        if (d < 0) {
-            N = -N;
-            swap(n1, n2);
-        }
-        r0 = (n1 - n2) / (n1 + n2);
-        r0 *= r0;
-        float cosX = -dot(I, N);
-        if (n1 > n2) {
-            float n = n1 / n2;
-            float sinT2 = n*n*(1.0-cosX*cosX);
-            if (sinT2 > 1.0)
-                ret = 1.0;
-            cosX = sqrt(1.0 - sinT2);
-        }
-        float x = 1.0 - cosX;
-        ret = r0 + (1.0 - r0)*x*x*x*x*x;
-        ret = 
-        */
     }
 
     // clamp
@@ -236,13 +194,16 @@ void RayTracer::Run(StatusReporter* statusReporter) {
             vec3 p = py + c*dx;
             vec4 color = (this->*Sample)(pos, p, dx, dy);
             image_->SetPixel(r, c, color);
-        if (statusReporter) {
-            current_time = high_resolution_clock::now();
-            float dt = duration_cast<milliseconds>(current_time - start_time).count();
-            statusReporter->Update(r / (float) height, dt / 1000);
-        }
+            // if (statusReporter) {
+            //     current_time = high_resolution_clock::now();
+            //     float dt = duration_cast<milliseconds>(current_time - start_time).count();
+            //     statusReporter->Update(r / (float) height, dt / 1000);
+            // }
         }
     }
+    // current_time = high_resolution_clock::now();
+    // float dt = duration_cast<milliseconds>(current_time - start_time).count();
+    // statusReporter->Update(1, dt / 1000);
 
     // Save the final image
     image_->Write(camera_->getOutputImage());
