@@ -5,7 +5,7 @@ From Zip file:
 ```sh
 unzip 5607_hw2-master.zip
 cd 5607_hw2-master/ext/nanogui
-git clone --recursive https://github.com/wjakob/nanogui.git
+git clone --recursive https://github.com/wjakob/nanogui.git ./
 cd ../../
 mkdir build
 cd build
