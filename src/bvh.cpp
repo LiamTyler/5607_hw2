@@ -142,7 +142,7 @@ void BVH::Partition(const vector<Shape*>& shapes) {
     min_ = vec3(minX, minY, minZ);
     max_ = vec3(maxX, maxY, maxZ);
 
-    vec3 mid = (minC + maxC) / 2;
+    vec3 mid = (minC + maxC) / 2.0f;
     vec3 d = maxC - minC;
     function<bool(const vec3&, const vec3&)> cmp;
     // split on largest axis

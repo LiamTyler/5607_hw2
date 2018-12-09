@@ -141,7 +141,7 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
         // reflection
         if (m->getSpecular() != vec3(0,0,0)) {
             r = normalize(reflect(I, N));
-            Ray mirror(p + 0.001 * r, r);
+            Ray mirror(p + 0.001f * r, r);
             reflectColor = m->getSpecular() * vec3(TraceRay(mirror, depth + 1));
         }
 
@@ -149,7 +149,7 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
         if (m->getTransmissive() != vec3(0,0,0)) {
             float ratio = n1 / n2;
             r = normalize(glm::refract(I, N, ratio));
-            Ray transmissive(p + 0.001 * r, r);
+            Ray transmissive(p + 0.001f * r, r);
             transmissiveColor = m->getTransmissive() * vec3(TraceRay(transmissive, depth + 1));
         }
 
@@ -249,7 +249,7 @@ void RayTracer::Run(StatusReporter* statusReporter) {
     float d = height / (2.0 * tan(half_angle));
     vec3 dx = normalize(cross(up, dir));
     vec3 dy = -up;
-    vec3 ul = pos + d * dir + up * (height / 2.0) - (width / 2.0) * dx;
+    vec3 ul = pos + d * dir + up * (height / 2.0f) - (width / 2.0f) * dx;
 
     // Get which sampling method is specified
     auto Sample = &RayTracer::BasicSample;
@@ -261,9 +261,9 @@ void RayTracer::Run(StatusReporter* statusReporter) {
     // Loop through each pixel
     #pragma omp parallel for schedule(dynamic) 
     for (int r = 0; r < height; r++) {
-        vec3 py = ul + r * dy;
+        vec3 py = ul + ((float)r) * dy;
         for (int c = 0; c < width; c++) {
-            vec3 p = py + c*dx;
+            vec3 p = py + ((float)c)*dx;
             vec4 color = (this->*Sample)(pos, p, dx, dy);
             image_->SetPixel(r, c, color);
             if (statusReporter) {
@@ -290,14 +290,14 @@ vec4 RayTracer::SuperSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
     vec4 newColor = TraceRay(ray, 0);
     int w = 2;
     int h = 2; 
-    vec3 dx2 = (1.0/w)*dx;
-    vec3 dy2 = (1.0/h)*dy;
-    vec3 ulp = p - .5*dx - .5*dy;
-    ulp += .5*dx2 + .5*dy2;
+    vec3 dx2 = (1.0f/w)*dx;
+    vec3 dy2 = (1.0f/h)*dy;
+    vec3 ulp = p - .5f*dx - .5f*dy;
+    ulp += .5f*dx2 + .5f*dy2;
     for (int r2 = 0; r2 < h; r2++) {
-        vec3 py2 = ulp + r2*dy2;
+        vec3 py2 = ulp + ((float)r2)*dy2;
         for (int c2 = 0; c2 < w; c2++) {
-            p = py2 + c2*dx2;
+            p = py2 + ((float)c2)*dx2;
             dir = normalize(p - pos);
             ray = Ray(pos, dir);
             newColor += TraceRay(ray, 0);
@@ -315,11 +315,11 @@ vec4 RayTracer::AdaptiveSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
     vec4 prevColor = newColor;
     vec3 dx2 = dx;
     vec3 dy2 = dy;
-    vec3 ulp = p - .5*dx - .5*dy;
+    vec3 ulp = p - .5f*dx - .5f*dy;
     for (int r2 = 0; r2 < 2; r2++) {
-        vec3 py2 = ulp + r2*dy2;
+        vec3 py2 = ulp + ((float)r2)*dy2;
         for (int c2 = 0; c2 < 2; c2++) {
-            vec3 p2 = py2 + c2*dx2;
+            vec3 p2 = py2 + ((float)c2)*dx2;
             dir = normalize(p2 - pos);
             ray = Ray(pos, dir);
             vec4 tmp = TraceRay(ray, 0);
@@ -329,22 +329,22 @@ vec4 RayTracer::AdaptiveSample(vec3& pos, vec3 &p, vec3& dx, vec3& dy) {
         }
     }
     if (length(deltaColor) > 1) {
-        dx2 = dx / 2;
-        dy2 = dy / 2;
-        ulp = p - .5*dx2 - .5*dy2;
+        dx2 = dx / 2.0f;
+        dy2 = dy / 2.0f;
+        ulp = p - .5f*dx2 - .5f*dy2;
         for (int r2 = 0; r2 < 2; r2++) {
-            vec3 py2 = ulp + r2*dy2;
+            vec3 py2 = ulp + ((float)r2)*dy2;
             for (int c2 = 0; c2 < 2; c2++) {
-                p = py2 + c2*dx2;
+                p = py2 + ((float)c2)*dx2;
                 dir = normalize(p - pos);
                 ray = Ray(pos, dir);
                 vec4 tmp = TraceRay(ray, 0);
                 newColor += tmp;
             }
         }
-        newColor /= 9.0;
+        newColor /= 9.0f;
     } else {
-        newColor /= 5.0;
+        newColor /= 5.0f;
     }
     return newColor;
 }

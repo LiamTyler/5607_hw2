@@ -35,7 +35,7 @@ class DirectionalLight : public Light {
                 Intersection& inter, std::function<Shape*(Intersection&)> Intersect) {
             vec3 l = -direction_;
             vec3 ret(0,0,0);
-            Ray shadow(p + 0.01*l, l);
+            Ray shadow(p + 0.01f*l, l);
             Intersection i = inter;
             i.ray = shadow;
             Shape* shadow_obj = Intersect(i);
@@ -64,14 +64,14 @@ class PointLight : public Light {
             vec3 l = position_ - p;
             float d = length(l);
             l = normalize(l);
-            Ray shadow(p + 0.01*l, l);
+            Ray shadow(p + 0.01f*l, l);
             Intersection i = inter;
             i.ray = shadow;
             Shape* shadow_obj = Intersect(i);
             if (shadow_obj && length(i.ray.Evaluate() - p) < d)
                 return ret;
 
-            vec3 I = (1.0 / (d*d)) * color_;
+            vec3 I = (1.0f / (d*d)) * color_;
             ret += I*m->getDiffuse()*max(0.f, dot(n, l));
             ret += I*m->getSpecular()*pow(max(0.f, dot(v, glm::reflect(l,n))), m->getPower());;
             return ret;
@@ -98,10 +98,10 @@ class SpotLight : public Light {
             float d = length(l);
             l = normalize(l);
 
-            float angle = std::acos(dot(l, direction_)) * 180 / M_PI;
+            float angle = std::acos(dot(l, direction_)) * 180.0f / M_PI;
             if (angle > angle2_)
                 return ret;
-            vec3 I = (1.0/(d*d)) * color_; 
+            vec3 I = (1.0f/(d*d)) * color_; 
             if (angle >= angle1_) {
                 angle = 1 - (angle - angle1_) / (angle2_ - angle1_);
                 I = angle * I;
@@ -109,7 +109,7 @@ class SpotLight : public Light {
 
             l = -l;
             // cast shadow ray
-            Ray shadow(p + 0.01*l, l);
+            Ray shadow(p + 0.01f*l, l);
             Intersection i = inter;
             i.ray = shadow;
             Shape* shadow_obj = Intersect(i);

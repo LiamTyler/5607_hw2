@@ -75,7 +75,7 @@ class Triangle : public Shape {
             min_ = vec3(minX, minY, minZ);
             max_ = vec3(maxX, maxY, maxZ);
 
-            vec3 mid = .5 * (v2 + v3);
+            vec3 mid = .5f * (v2 + v3);
             float mx = v1.x + 2.0/3.0*(mid.x - v1.x);
             float my = v1.y + 2.0/3.0*(mid.y - v1.y);
             float mz = v1.z + 2.0/3.0*(mid.z - v1.z);
@@ -118,7 +118,7 @@ class Triangle : public Shape {
             inter.ray.tmin = t;
 
             vec3 P = inter.ray.Evaluate();
-            float area = length(N) / 2;
+            float area = length(N) / 2.0f;
             
             vec3 vp;
             vec3 vpCross;
