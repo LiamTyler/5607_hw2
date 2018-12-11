@@ -19,9 +19,12 @@ using std::cout;
 using std::max;
 using std::min;
 
+class Shape;
+
 typedef struct {
     vector<vec3>* verts;
     vector<vec3>* norms;
+    vector<Shape*>* shapes;
     vec3 cameraDir;
     Ray ray;
     float u, v;

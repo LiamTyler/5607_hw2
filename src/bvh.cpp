@@ -165,6 +165,8 @@ void BVH::Partition(const vector<Shape*>& shapes) {
     }
     if (left.size() == 0 || right.size() == 0) {
         shapes_ = shapes;
+        if (left.size() > 1 || right.size() > 1)
+            std::cout << "num shapes in leaf: " << left.size() << " " << right.size() << std::endl;
     } else {
         left_ = new BVH;
         right_ = new BVH;
@@ -192,3 +194,11 @@ void BVH::PrintTree(int curr_depth, int max_depth) {
     }
 }
 
+int BVH::count() {
+    int sum = 0;
+    if (left_)
+        sum += left_->count();
+    if (right_)
+        sum += right_->count();
+    return 1 + sum;
+}

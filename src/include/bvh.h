@@ -17,8 +17,8 @@ class BVH {
         int getNumShapes() { return shapes_.size(); }
         void getBB(vec3& mi, vec3& ma) { mi = min_; ma = max_; }
         void PrintTree(int curr_depth, int max_depth);
+        int count();
 
-    private:
         BVH* left_;
         BVH* right_;
         vector<Shape*> shapes_;

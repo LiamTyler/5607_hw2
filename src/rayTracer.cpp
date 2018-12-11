@@ -91,6 +91,8 @@ void RayTracer::Parse(string filename) {
 #if USE_BVH == 1
     bvh_ = new BVH;
     bvh_->Partition(shapes_);
+
+    bvh2_ = CreateFromBVH(bvh_, shapes_);
     // bvh_->PrintTree(0, 2);
 #endif
 }
@@ -164,14 +166,9 @@ vec4 RayTracer::ComputeLighting(Shape* hit_obj, Intersection& inter, int depth) 
     return vec4(color, 1);
 }
 
-//float R0 = (n1 - n2) / (n1 + n2);
-//R0 *= R0;
-//kr = R0 + (1-R0)*pow(1-c, 5);
-//if (kr < 1) {
-//
-
 Shape* RayTracer::Intersect2(Intersection& inter) {
-    return bvh_->Intersect(inter);
+    // return bvh_->Intersect(inter);
+    return IntersectBVH2(bvh2_, inter);
 }
 
 Shape* RayTracer::Intersect(Intersection& inter) {
@@ -203,6 +200,7 @@ vec4 RayTracer::TraceRay(Ray& ray, int depth) {
     inter.ray = ray;
     inter.verts = &vertices_;
     inter.norms = &normals_;
+    inter.shapes = &shapes_;
     inter.cameraDir = normalize(camera_->getDir());
 
     // Shape* hit_obj = Intersect(inter);

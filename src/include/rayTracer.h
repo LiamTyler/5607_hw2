@@ -12,6 +12,7 @@
 #include "include/image.h"
 #include "include/statusReporter.h"
 #include "include/bvh.h"
+#include "include/bvh2.h"
 
 using std::string;
 using glm::vec3;
@@ -49,6 +50,7 @@ class RayTracer {
         vector<Material*> materials_;
 
         BVH* bvh_;
+        BVH2* bvh2_;
 
         vec4 background_;
         int max_depth_;
