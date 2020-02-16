@@ -1,4 +1,4 @@
-# 5607 HW2
+# Ray Tracer
 
 ## Installation
 From Zip file:
